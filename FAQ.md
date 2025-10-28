@@ -1,18 +1,19 @@
 # Vectorize & Dataset Preparation FAQ
 
 ### Can we split the corpus so each partition contains roughly 600k rows?
-Yes. Use the updated `prepare_datasets.py --directory-size 600000` to create chunked directories, then run `vectorize.py index --partition-dir ... --partition-out-dir ...` to index them one partition at a time.
+Yes. Use the updated `prepare_datasets.py --model kb.std.ecc_6_0_ehp_7.registry:MODEL_REGISTRY --directory-size 600000` to create chunked directories, then run `vectorize.py index --model kb.std.ecc_6_0_ehp_7.registry:MODEL_REGISTRY --partition-dir ... --partition-out-dir ...` to index them one partition at a time.
 
 ### Do partition configs need the original `columns` mapping?
 No. The sanitized CSVs already use the correct headers, so the generated vectorize configs leave `"columns": {}`.
 
 ### How do I switch OpenAI embedding models?
-Pass `--embedding-model` to `vectorize.py index`, e.g. `--embedding-model text-embedding-3-large`.
+Pass `--embedding-model` to `vectorize.py index`, e.g. `vectorize.py index --model kb.std.ecc_6_0_ehp_7.registry:MODEL_REGISTRY --embedding-model text-embedding-3-large ...`.
 
 ### How do I index against Chroma Cloud instead of local persistence?
 Use the HTTP client flags, for example:
 ```bash
 vectorize.py index \
+  --model kb.std.ecc_6_0_ehp_7.registry:MODEL_REGISTRY \
   --client-type http \
   --chroma-server-host api.trychroma.com \
   --chroma-server-port 443 \
