@@ -34,6 +34,8 @@ vectorize.py index \
 
 This emits `partition_00000`, stores a manifest, and seeds the Chroma collection.
 
+When sanitising rows, `prepare_datasets.py` now tries to repair newline-fractured records by stitching consecutive physical lines together around any configured `malformed_column`. Rows that still fall short of the expected column count after reconstruction are skipped with a warning that includes the affected row span, so malformed data never slips through silently.
+
 ### 2. Append New Rows
 
 A month later Treasury drops a hotfix CSV for existing tables.
