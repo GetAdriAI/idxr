@@ -76,8 +76,30 @@ def load_existing_hashes(manifest: Mapping[str, Any]) -> DefaultDict[str, Set[st
                     csv_path,
                 )
                 continue
+            digest_path = csv_path.with_suffix(csv_path.suffix + ".digests")
+            digests_loaded = False
+            if digest_path.exists():
+                try:
+                    with digest_path.open("r", encoding="utf-8") as digest_handle:
+                        for line in digest_handle:
+                            digest = line.strip()
+                            if digest:
+                                seen[model_name].add(digest)
+                    digests_loaded = True
+                except OSError as exc:
+                    logging.warning(
+                        "Failed to load digest cache %s (%s); will rebuild from CSV.",
+                        digest_path,
+                        exc,
+                    )
+                    digests_loaded = False
+            if digests_loaded:
+                continue
             try:
-                with csv_path.open("r", encoding="utf-8", newline="") as handle:
+                digest_path.parent.mkdir(parents=True, exist_ok=True)
+                with csv_path.open(
+                    "r", encoding="utf-8", newline=""
+                ) as handle, digest_path.open("w", encoding="utf-8") as digest_handle:
                     reader = csv.reader(handle)
                     headers = next(reader, None)
                     if not headers:
@@ -91,10 +113,12 @@ def load_existing_hashes(manifest: Mapping[str, Any]) -> DefaultDict[str, Set[st
                                 values.append(cell if cell != "" else "")
                             else:
                                 values.append("")
-                        seen[model_name].add(compute_row_digest(values))
+                        digest = compute_row_digest(values)
+                        seen[model_name].add(digest)
+                        digest_handle.write(f"{digest}\n")
             except OSError as exc:
                 logging.warning(
-                    "Failed to load existing hashes from %s: %s",
+                    "Failed to rebuild digests from %s: %s",
                     csv_path,
                     exc,
                 )

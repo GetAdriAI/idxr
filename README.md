@@ -13,6 +13,7 @@
 - 🔄 **Schema-aware manifest** with versioning, stale partition tracking, and per-model metadata.
 - 🧠 **Resume-friendly ingestion** (per model and per partition) that records file offsets and row indices.
 - 🩹 **CSV repair safeguards**; `prepare_datasets.py` stitches newline-fractured rows around a configured malformed column before deciding to drop them.
+- ⚡ **Digest caches** keep reruns fast by persisting per-partition row hashes alongside the CSVs.
 - 🧩 **Pluggable model registries**; pass `--model <module:REGISTRY>` to target ECC defaults or your own knowledge domain.
 - ☁️ **Chroma transport flexibility**; switch between persistent client and HTTP/Cloud with a couple of flags.
 - 🧹 **Drop + remediation tooling** that mirrors the migration workflow and keeps audit history.

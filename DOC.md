@@ -61,6 +61,7 @@ vectorize.py index \
 ```
 
 Row digests keep the old partitions untouched while the new ones stack on top.
+Each partition also writes `<model>.digests` sidecars so later runs can reload dedupe hashes without re-scanning the CSVs.
 
 ### 3. Add New Models
 

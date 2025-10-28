@@ -17,6 +17,7 @@ from typing import (
     Optional,
     Sequence,
     Set,
+    TextIO,
     Tuple,
     cast,
 )
@@ -53,6 +54,8 @@ class PartitionWriter:
         self.active_handles: Dict[Tuple[str, str], Any] = {}
         self.active_writers: Dict[Tuple[str, str], Any] = {}
         self.header_written: Dict[Tuple[str, str], bool] = {}
+        self.digest_handles: Dict[Tuple[str, str], TextIO] = {}
+        self.digest_paths: Dict[Tuple[str, str], Path] = {}
         self.created_partitions: List[Dict[str, Any]] = []
         self.partition_replacements: DefaultDict[str, Set[str]] = defaultdict(set)
         self.context_partition: Optional[str] = None
@@ -86,6 +89,13 @@ class PartitionWriter:
                 pass
             self.active_writers.pop(key, None)
             self.header_written.pop(key, None)
+            digest_handle = self.digest_handles.pop(key, None)
+            if digest_handle is not None:
+                try:
+                    digest_handle.close()
+                except OSError:
+                    pass
+            self.digest_paths.pop(key, None)
 
     def finalize_current(self) -> None:
         if self.current_partition is None:
@@ -143,6 +153,13 @@ class PartitionWriter:
         self.active_handles.clear()
         self.active_writers.clear()
         self.header_written.clear()
+        for handle in list(self.digest_handles.values()):
+            try:
+                handle.close()
+            except OSError:
+                pass
+        self.digest_handles.clear()
+        self.digest_paths.clear()
 
     def set_context(self, partition_name: Optional[str]) -> None:
         self.context_partition = partition_name
@@ -179,6 +196,27 @@ class PartitionWriter:
                 "path": str(out_path.resolve()),
                 "columns": {},
             }
+            digest_path = out_path.with_suffix(out_path.suffix + ".digests")
+            digest_path.parent.mkdir(parents=True, exist_ok=True)
+            digest_handle = digest_path.open("w", encoding="utf-8")
+            self.digest_handles[handle_key] = digest_handle
+            self.digest_paths[handle_key] = digest_path
+            partition["config_entries"][model_name]["digests"] = str(
+                digest_path.resolve()
+            )
+        else:
+            digest_handle = self.digest_handles.get(handle_key)
+            if digest_handle is None:
+                digest_path = self.digest_paths.get(handle_key)
+                if digest_path is None:
+                    out_path = partition["model_paths"][model_name]
+                    digest_path = out_path.with_suffix(out_path.suffix + ".digests")
+                    digest_path.parent.mkdir(parents=True, exist_ok=True)
+                    digest_handle = digest_path.open("a", encoding="utf-8")
+                    self.digest_paths[handle_key] = digest_path
+                else:
+                    digest_handle = digest_path.open("a", encoding="utf-8")
+                self.digest_handles[handle_key] = digest_handle
 
         if not headers:
             raise ValueError(f"No headers available for model {model_name}")
@@ -188,6 +226,10 @@ class PartitionWriter:
             self.header_written[handle_key] = True
 
         writer.writerow(list(row_values))
+        digest = compute_row_digest(row_values)
+        digest_handle = self.digest_handles.get(handle_key)
+        if digest_handle is not None:
+            digest_handle.write(f"{digest}\n")
 
         schema_entry = self.schema_entries.get(model_name, {})
         partition["schema"][model_name] = {
