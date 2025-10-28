@@ -257,6 +257,51 @@ def fix_malformed_values(
     return values
 
 
+def stitch_multiline_values(
+    initial_values: List[str],
+    *,
+    expected_columns: int,
+    malformed_column: Optional[int],
+    delimiter: str,
+    row_iter: Iterator[Tuple[int, List[str]]],
+) -> Tuple[List[str], List[int]]:
+    """Attempt to fold subsequent physical rows into the current logical row."""
+    stitched = list(initial_values)
+    consumed_rows: List[int] = []
+
+    while len(stitched) < expected_columns:
+        next_item = next(row_iter, None)
+        if next_item is None:
+            break
+
+        next_row_number, extra_values = next_item
+        consumed_rows.append(next_row_number)
+
+        if stitched:
+            if extra_values:
+                stitched[-1] = f"{stitched[-1]}\n{extra_values[0]}"
+                if len(extra_values) > 1:
+                    stitched.extend(extra_values[1:])
+            else:
+                stitched[-1] = f"{stitched[-1]}\n"
+        else:
+            stitched = list(extra_values)
+
+        stitched = fix_malformed_values(
+            stitched,
+            expected_columns,
+            malformed_column,
+            delimiter,
+        )
+
+        if len(stitched) == expected_columns:
+            return stitched, consumed_rows
+        if len(stitched) > expected_columns:
+            break
+
+    return stitched, consumed_rows
+
+
 def iterate_model_rows(
     config: PrepModelConfig,
     model_name: str,
@@ -280,7 +325,8 @@ def iterate_model_rows(
             newline="",
         ) as handle:
             reader = csv.reader(handle, delimiter=config.delimiter)
-            for row_number, values in enumerate(reader, start=1):
+            row_iter = enumerate(reader, start=1)
+            for row_number, values in row_iter:
                 if source_headers is None and has_header:
                     source_headers = [
                         value.strip() if isinstance(value, str) else value
@@ -308,11 +354,37 @@ def iterate_model_rows(
                     expected_columns = len(values)
                 if len(values) != expected_columns:
                     values = fix_malformed_values(
-                        values,
+                        list(values),
                         expected_columns,
                         config.malformed_column,
                         config.delimiter,
                     )
+                if (
+                    expected_columns is not None
+                    and len(values) < expected_columns
+                    and expected_columns > 0
+                ):
+                    stitched_values, consumed_rows = stitch_multiline_values(
+                        list(values),
+                        expected_columns=expected_columns,
+                        malformed_column=config.malformed_column,
+                        delimiter=config.delimiter,
+                        row_iter=row_iter,
+                    )
+                    if len(stitched_values) == expected_columns:
+                        values = stitched_values
+                    else:
+                        last_row = consumed_rows[-1] if consumed_rows else row_number
+                        logging.warning(
+                            "Skipping %s row %s (spanning up to row %s): "
+                            "expected %s column(s), found %s",
+                            csv_path,
+                            format_int(row_number),
+                            format_int(last_row),
+                            expected_columns,
+                            len(stitched_values),
+                        )
+                        continue
                 if len(values) != expected_columns:
                     logging.warning(
                         "Skipping %s row %s: expected %s column(s), found %s",
