@@ -695,7 +695,7 @@ class VectorizeCLI:
         client_type: str,
         persist_dir: Optional[Path],
         collection_name: str,
-        embedding_function,
+        embedding_function: chromadb.EmbeddingFunction,
         http_host: Optional[str],
         http_port: Optional[int],
         http_ssl: bool,
@@ -743,7 +743,7 @@ class VectorizeCLI:
         else:  # cloud client
             collection = client.get_or_create_collection(
                 name=collection_name,
-                embedding_model=model_name_attr,
+                embedding_function=embedding_function,
                 metadata=metadata or None,
             )
         if metadata:
