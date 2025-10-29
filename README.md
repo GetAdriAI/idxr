@@ -14,6 +14,7 @@
 - 🧠 **Resume-friendly ingestion** (per model and per partition) that records file offsets and row indices.
 - 🩹 **CSV repair safeguards**; `prepare_datasets.py` stitches newline-fractured rows around a configured malformed column before deciding to drop them.
 - ⚡ **Digest caches** keep reruns fast by persisting per-partition row hashes alongside the CSVs.
+- 🧵 **Parallel partition runs** fan out manifest indexing via `--parallel-partitions` when you want multiple partitions embedding at once.
 - 🗂️ **Pluggable collection strategies** let Chroma Cloud index each partition into its own collection while local runs stick with a single name.
 - 🚮 **Stale cleanup parity** – when partitions map to standalone collections, `--delete-stale` drops those collections wholesale before rebuilding.
 - 🎯 **E2E sampling mode** (`--e2e-test-run`) indexes random rows per CSV and writes an audit log so you can validate pipelines without processing millions of records.

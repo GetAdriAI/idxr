@@ -9,6 +9,7 @@ import os
 import random
 import shutil
 import textwrap
+from concurrent.futures import ThreadPoolExecutor, as_completed
 from datetime import datetime, timezone
 from pathlib import Path
 from typing import Any, Dict, List, Mapping, Optional, Sequence, Tuple
@@ -391,6 +392,15 @@ class VectorizeCLI:
             help=(
                 "Root directory where per-partition Chroma persistence data should be written."
                 " Required when partition indexing is used."
+            ),
+        )
+        index_parser.add_argument(
+            "--parallel-partitions",
+            type=int,
+            default=1,
+            help=(
+                "Number of partitions to index concurrently when partition indexing is enabled."
+                " Defaults to 1 (no parallelism)."
             ),
         )
         index_parser.add_argument(
@@ -1271,6 +1281,16 @@ class VectorizeCLI:
         partition_out_root = args.partition_out_dir.resolve()
         partition_out_root.mkdir(parents=True, exist_ok=True)
 
+        parallel_partitions = int(getattr(args, "parallel_partitions", 1) or 1)
+        if parallel_partitions < 1:
+            logging.error("--parallel-partitions must be at least 1.")
+            return 1
+        if e2e_config is not None and parallel_partitions > 1:
+            logging.warning(
+                "Disabling parallel partition indexing because --e2e-test-run is active."
+            )
+            parallel_partitions = 1
+
         logging.info(
             "Detected %d partition(s) from %s; output will be written under %s",
             len(partition_entries),
@@ -1278,6 +1298,7 @@ class VectorizeCLI:
             partition_out_root,
         )
 
+        validated_partitions: List[Tuple[str, Path, Path]] = []
         for partition_name, partition_path, config_path in partition_entries:
             if not partition_path.exists() or not partition_path.is_dir():
                 logging.error(
@@ -1293,9 +1314,21 @@ class VectorizeCLI:
                     config_path,
                 )
                 return 1
+            validated_partitions.append((partition_name, partition_path, config_path))
+
+        def _index_single_partition(entry: Tuple[str, Path, Path]) -> int:
+            partition_name, _partition_path, config_path = entry
+            try:
+                collection_name = collection_strategy.collection_name(partition_name)
+            except ValueError as exc:
+                logging.error(
+                    "Failed to resolve collection name for partition %s: %s",
+                    partition_name,
+                    exc,
+                )
+                return 1
 
             partition_persist_dir = partition_out_root / partition_name
-            collection_name = collection_strategy.collection_name(partition_name)
             logging.info(
                 "Indexing partition %s (collection=%s, config=%s, persist_dir=%s)",
                 partition_name,
@@ -1303,6 +1336,24 @@ class VectorizeCLI:
                 config_path,
                 partition_persist_dir,
             )
+
+            if parallel_partitions == 1:
+                local_encoder = encoder
+                local_embedding_function = embedding_function
+            else:
+                try:
+                    local_encoder, local_embedding_function = (
+                        self._initialize_embedding_resources(
+                            args.embedding_model, api_key
+                        )
+                    )
+                except RuntimeError as exc:
+                    logging.error(
+                        "Failed to prepare embedding resources for partition %s: %s",
+                        partition_name,
+                        exc,
+                    )
+                    return 1
 
             result = self._run_index_for_config(
                 config_path=config_path,
@@ -1312,8 +1363,8 @@ class VectorizeCLI:
                 embedding_model=args.embedding_model,
                 resume=args.resume,
                 skip_validation=args.skip_validation,
-                embedding_function=embedding_function,
-                encoder=encoder,
+                embedding_function=local_embedding_function,
+                encoder=local_encoder,
                 resume_state_file=None,
                 client_type=client_type,
                 http_host=http_host,
@@ -1331,8 +1382,44 @@ class VectorizeCLI:
                 model_metadata=partition_model_metadata.get(partition_name),
                 e2e_config=e2e_config,
             )
-            if result != 0:
-                return result
+            return result
+
+        if parallel_partitions == 1:
+            for entry in validated_partitions:
+                result = _index_single_partition(entry)
+                if result != 0:
+                    return result
+        else:
+            logging.info(
+                "Parallel partition indexing enabled with %d worker(s).",
+                parallel_partitions,
+            )
+            had_error = False
+            with ThreadPoolExecutor(max_workers=parallel_partitions) as executor:
+                future_map = {
+                    executor.submit(_index_single_partition, entry): entry[0]
+                    for entry in validated_partitions
+                }
+                for future in as_completed(future_map):
+                    partition_name = future_map[future]
+                    try:
+                        result = future.result()
+                    except Exception:  # pragma: no cover - defensive
+                        logging.exception(
+                            "Partition %s raised an unexpected exception",
+                            partition_name,
+                        )
+                        had_error = True
+                        continue
+                    if result != 0:
+                        logging.error(
+                            "Partition %s failed with exit code %s",
+                            partition_name,
+                            result,
+                        )
+                        had_error = True
+            if had_error:
+                return 1
 
         logging.info(
             "Completed indexing for %d partition(s) from %s",

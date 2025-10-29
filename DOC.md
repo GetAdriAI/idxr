@@ -60,6 +60,9 @@ vectorize.py index \
   --resume
 ```
 
+Need more throughput? Add `--parallel-partitions <workers>` to fan out multiple partitions at a time.
+The CLI caps concurrency at the number you supply and automatically falls back to sequential mode when features like `--e2e-test-run` require deterministic sampling.
+
 Row digests keep the old partitions untouched while the new ones stack on top.
 Each partition also writes `<model>.digests` sidecars so later runs can reload dedupe hashes without re-scanning the CSVs.
 When targeting Chroma Cloud, the indexer now creates one collection per partition (optionally prefixed via `--collection`); local persistent runs continue to use the single collection name you supply.
