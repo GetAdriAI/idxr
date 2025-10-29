@@ -124,8 +124,8 @@ def iter_documents(
     on_skip_complete: Optional[Callable[[ResumeState], None]] = None,
     extra_metadata: Optional[Mapping[str, MetadataValue]] = None,
     schema_version: Optional[int] = None,
-) -> Iterator[Tuple[str, str, MetadataDict]]:
-    """Yield document payloads (id, text, metadata) for a given model CSV."""
+) -> Iterator[Tuple[int, str, str, MetadataDict]]:
+    """Yield document payloads (row index, id, text, metadata) for a given model CSV."""
 
     start_offset: Optional[int] = None
     start_row_index = 0
@@ -217,4 +217,4 @@ def iter_documents(
                 extra_metadata=extra_metadata,
                 schema_version=schema_version,
             )
-            yield doc_id, document_text, metadata
+            yield row_index, doc_id, document_text, metadata

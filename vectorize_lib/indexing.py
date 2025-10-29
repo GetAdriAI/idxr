@@ -25,6 +25,7 @@ from .documents import (
     ResumeState,
     iter_documents,
 )
+from .e2e import E2ETestConfig
 from indexer.models import ModelSpec
 from .utils import (
     MAX_DOCS_PER_REQUEST,
@@ -76,6 +77,7 @@ def index_from_config(
     completion_state_path: Optional[Path] = None,
     extra_metadata: Optional[Mapping[str, MetadataValue]] = None,
     model_metadata: Optional[Mapping[str, Mapping[str, MetadataValue]]] = None,
+    e2e_config: Optional[E2ETestConfig] = None,
 ) -> Dict[str, int]:
     """Index documents from CSV files into the collection, returning counts per model."""
     if batch_size < 1:
@@ -84,6 +86,8 @@ def index_from_config(
         raise ValueError("token_limit must be between 1 and MAX_TOKENS_PER_REQUEST")
     if encoder is None:
         raise ValueError("A token encoder must be supplied for batching logic.")
+    if e2e_config and resume:
+        raise ValueError("E2E test runs do not support resume mode.")
 
     completion_state = completion_state or {}
     resume_counts: Counter[str] = Counter()
@@ -200,10 +204,17 @@ def index_from_config(
         resume_using_offset = resume and resume_state.offset is not None
         skip_rows = existing_count if resume and not resume_using_offset else 0
 
+        if e2e_config is not None:
+            resume_state = ResumeState()
+            skip_rows = 0
+            previous_offset = None
+            resume_using_offset = False
+
         ids: List[str] = []
         documents: List[str] = []
         metadatas: List[MetadataDict] = []
         token_counts: List[int] = []
+        row_numbers: List[int] = []
         current_token_total = 0
         added = 0
         batches = 0
@@ -289,23 +300,31 @@ def index_from_config(
             documents_ref: List[str],
             metadatas_ref: List[MetadataDict],
             token_counts_ref: List[int],
+            row_numbers_ref: List[int],
             model_key: str = current_model_name,
             collection_ref: Collection = collection,
             token_limit_value: int = token_limit,
             signature: Optional[Dict[str, float]] = current_signature,
             state_ref: ResumeState = resume_state,
-        ) -> None:
-            nonlocal ids, documents, metadatas, token_counts, current_token_total
-            nonlocal added, batches, effective_batch_size, collection_count_so_far
+            source_csv: Path,
+            batch_limit: int,
+        ) -> int:
+            nonlocal ids, documents, metadatas, token_counts, row_numbers
+            nonlocal current_token_total, added, batches, effective_batch_size
+            nonlocal collection_count_so_far
+
+            local_batch_size = batch_limit
+
             if not ids_ref:
-                return
+                return batch_limit
 
             while ids_ref:
-                n = min(len(ids_ref), effective_batch_size)
+                n = min(len(ids_ref), local_batch_size)
                 emitted_ids = ids_ref[:n]
                 emitted_docs = documents_ref[:n]
                 emitted_metas: List[MetadataDict] = metadatas_ref[:n]
                 emitted_tokens = token_counts_ref[:n]
+                emitted_rows = row_numbers_ref[:n]
                 emitted_token_total = sum(emitted_tokens)
 
                 try:
@@ -342,6 +361,7 @@ def index_from_config(
                             del documents_ref[remove_idx]
                             del metadatas_ref[remove_idx]
                             del token_counts_ref[remove_idx]
+                            del row_numbers_ref[remove_idx]
                         current_token_total = sum(token_counts_ref)
                         if not ids_ref:
                             break
@@ -353,6 +373,7 @@ def index_from_config(
                     emitted_docs = documents_ref[:n]
                     emitted_metas = metadatas_ref[:n]
                     emitted_tokens = token_counts_ref[:n]
+                    emitted_rows = row_numbers_ref[:n]
                     emitted_token_total = sum(emitted_tokens)
 
                 if emitted_token_total > token_limit_value:
@@ -383,10 +404,11 @@ def index_from_config(
                     emitted_docs = documents_ref[:1]
                     emitted_metas = metadatas_ref[:1]
                     emitted_tokens = token_counts_ref[:1]
+                    emitted_rows = row_numbers_ref[:1]
                     emitted_token_total = single_tokens
                     n = 1
 
-                if n < effective_batch_size:
+                if n < local_batch_size:
                     logging.info(
                         "Adjusting effective batch size for %s from %s to "
                         "%s due to token limits (%s tokens, reason=%s).",
@@ -396,7 +418,9 @@ def index_from_config(
                         format_int(emitted_token_total),
                         reason,
                     )
-                    effective_batch_size = max(1, n)
+                    batch_limit = max(1, n)
+                    effective_batch_size = batch_limit
+                    local_batch_size = batch_limit
 
                 retry_after_duplicate = False
                 while True:
@@ -421,19 +445,24 @@ def index_from_config(
                             raise
                         before = len(ids_ref)
                         filtered = [
-                            (i, d, m, t)
-                            for i, d, m, t in zip(
-                                ids_ref, documents_ref, metadatas_ref, token_counts_ref
+                            (i, d, m, t, r)
+                            for i, d, m, t, r in zip(
+                                ids_ref,
+                                documents_ref,
+                                metadatas_ref,
+                                token_counts_ref,
+                                row_numbers_ref,
                             )
                             if i not in dup_set
                         ]
                         removed = before - len(filtered)
                         if not removed:
                             raise
-                        ids_ref[:] = [i for i, _, _, _ in filtered]
-                        documents_ref[:] = [d for _, d, _, _ in filtered]
-                        metadatas_ref[:] = [m for _, _, m, _ in filtered]
-                        token_counts_ref[:] = [t for _, _, _, t in filtered]
+                        ids_ref[:] = [i for i, _, _, _, _ in filtered]
+                        documents_ref[:] = [d for _, d, _, _, _ in filtered]
+                        metadatas_ref[:] = [m for _, _, m, _, _ in filtered]
+                        token_counts_ref[:] = [t for _, _, _, t, _ in filtered]
+                        row_numbers_ref[:] = [r for _, _, _, _, r in filtered]
                         current_token_total = sum(token_counts_ref)
                         sample_ids = ", ".join(list(dup_set)[:5])
                         if len(dup_set) > 5:
@@ -446,6 +475,34 @@ def index_from_config(
                         )
                         retry_after_duplicate = True
                         break
+                    except Exception:  # pragma: no cover - defensive
+                        try:
+                            context_chunks = []
+                            for doc_id, row_num, meta in zip(
+                                emitted_ids, emitted_rows, emitted_metas
+                            ):
+                                try:
+                                    metadata_bytes = len(json.dumps(meta, default=str))
+                                except (TypeError, ValueError):
+                                    metadata_bytes = -1
+                                context_chunks.append(
+                                    f"id={doc_id} row={row_num} metadata_bytes={metadata_bytes}"
+                                )
+                            context_summary = (
+                                "; ".join(context_chunks)
+                                if context_chunks
+                                else "no rows"
+                            )
+                        except Exception:  # pragma: no cover - defensive
+                            context_summary = "unable to summarise batch"
+                        logging.exception(
+                            "Chroma upsert failed for model %s (csv=%s, reason=%s). Rows: %s",
+                            model_key,
+                            source_csv,
+                            reason,
+                            context_summary,
+                        )
+                        raise
                     else:
                         break
 
@@ -475,16 +532,19 @@ def index_from_config(
                 del documents_ref[:n]
                 del metadatas_ref[:n]
                 del token_counts_ref[:n]
+                del row_numbers_ref[:n]
                 current_token_total = sum(token_counts_ref)
 
                 if not ids_ref:
                     break
 
                 if (
-                    len(ids_ref) < effective_batch_size
+                    len(ids_ref) < local_batch_size
                     and current_token_total <= token_limit
                 ):
                     break
+
+            return batch_limit
 
         skip_state_persisted = False
 
@@ -538,7 +598,117 @@ def index_from_config(
             else:
                 combined_metadata.update(model_specific)
 
-        for doc_id, text, metadata in iter_documents(
+        def process_document(
+            _row_number: int,
+            doc_id: str,
+            text: str,
+            metadata: MetadataDict,
+            source_csv: Path,
+            ids_list: List[str] = ids,
+            documents_list: List[str] = documents,
+            metadatas_list: List[MetadataDict] = metadatas,
+            token_counts_list: List[int] = token_counts,
+            row_numbers_list: List[int] = row_numbers,
+            model_key: str = current_model_name,
+        ) -> None:
+            nonlocal current_token_total, effective_batch_size
+
+            token_count = count_tokens(text, encoder)
+            current_batch_size = effective_batch_size
+
+            if token_count > token_limit:
+                if token_count > MAX_TOKENS_PER_REQUEST:
+                    logging.error(
+                        "Skipping document %s in %s: %s tokens exceed hard API limit %s.",
+                        doc_id,
+                        model_key,
+                        format_int(token_count),
+                        format_int(MAX_TOKENS_PER_REQUEST),
+                    )
+                    return
+                if ids_list:
+                    effective_batch_size = flush_batch(
+                        "pre-token-limit-excess",
+                        ids_ref=ids_list,
+                        documents_ref=documents_list,
+                        metadatas_ref=metadatas_list,
+                        token_counts_ref=token_counts_list,
+                        row_numbers_ref=row_numbers_list,
+                        source_csv=source_csv,
+                        batch_limit=effective_batch_size,
+                    )
+                    current_batch_size = effective_batch_size
+                ids_list.append(doc_id)
+                documents_list.append(text)
+                metadatas_list.append(metadata)
+                token_counts_list.append(token_count)
+                row_numbers_list.append(_row_number)
+                current_token_total += token_count
+                effective_batch_size = flush_batch(
+                    "single-over-safety",
+                    ids_ref=ids_list,
+                    documents_ref=documents_list,
+                    metadatas_ref=metadatas_list,
+                    token_counts_ref=token_counts_list,
+                    row_numbers_ref=row_numbers_list,
+                    source_csv=source_csv,
+                    batch_limit=effective_batch_size,
+                )
+                current_batch_size = effective_batch_size
+                return
+
+            if ids_list and (
+                len(ids_list) >= current_batch_size
+                or current_token_total + token_count > token_limit
+            ):
+                effective_batch_size = flush_batch(
+                    "threshold-reached",
+                    ids_ref=ids_list,
+                    documents_ref=documents_list,
+                    metadatas_ref=metadatas_list,
+                    token_counts_ref=token_counts_list,
+                    row_numbers_ref=row_numbers_list,
+                    source_csv=source_csv,
+                    batch_limit=current_batch_size,
+                )
+                current_batch_size = effective_batch_size
+
+            ids_list.append(doc_id)
+            documents_list.append(text)
+            metadatas_list.append(metadata)
+            token_counts_list.append(token_count)
+            row_numbers_list.append(_row_number)
+            current_token_total += token_count
+
+            current_batch_size = effective_batch_size
+
+            if len(ids_list) >= current_batch_size:
+                effective_batch_size = flush_batch(
+                    "batch-size-limit",
+                    ids_ref=ids_list,
+                    documents_ref=documents_list,
+                    metadatas_ref=metadatas_list,
+                    token_counts_ref=token_counts_list,
+                    row_numbers_ref=row_numbers_list,
+                    source_csv=source_csv,
+                    batch_limit=current_batch_size,
+                )
+                current_batch_size = effective_batch_size
+            elif current_token_total >= token_limit:
+                effective_batch_size = flush_batch(
+                    "token-limit",
+                    ids_ref=ids_list,
+                    documents_ref=documents_list,
+                    metadatas_ref=metadatas_list,
+                    token_counts_ref=token_counts_list,
+                    row_numbers_ref=row_numbers_list,
+                    source_csv=source_csv,
+                    batch_limit=current_batch_size,
+                )
+                current_batch_size = effective_batch_size
+            return
+
+        document_iterable = iter_documents(
             model_name,
             csv_path,
             spec,
@@ -548,82 +718,41 @@ def index_from_config(
             on_skip_complete=handle_skip_complete if skip_rows else None,
             extra_metadata=combined_metadata,
             schema_version=schema_version_int,
-        ):
-            token_count = count_tokens(text, encoder)
+        )
 
-            if token_count > token_limit:
-                if token_count > MAX_TOKENS_PER_REQUEST:
-                    logging.error(
-                        "Skipping document %s in %s: %s tokens exceed hard API limit %s.",
-                        doc_id,
-                        model_name,
-                        format_int(token_count),
-                        format_int(MAX_TOKENS_PER_REQUEST),
-                    )
-                    continue
-                if ids:
-                    flush_batch(
-                        "pre-token-limit-excess",
-                        ids_ref=ids,
-                        documents_ref=documents,
-                        metadatas_ref=metadatas,
-                        token_counts_ref=token_counts,
-                    )
-                ids.append(doc_id)
-                documents.append(text)
-                metadatas.append(metadata)
-                token_counts.append(token_count)
-                current_token_total += token_count
-                flush_batch(
-                    "single-over-safety",
-                    ids_ref=ids,
-                    documents_ref=documents,
-                    metadatas_ref=metadatas,
-                    token_counts_ref=token_counts,
+        if e2e_config is not None:
+            sampled_documents = e2e_config.sample_documents(
+                model_name=model_name,
+                csv_path=csv_path,
+                documents=document_iterable,
+            )
+            for sample in sampled_documents:
+                process_document(
+                    sample.row_index,
+                    sample.doc_id,
+                    sample.text,
+                    sample.metadata,
+                    source_csv=csv_path,
                 )
-                continue
-
-            if ids and (
-                len(ids) >= effective_batch_size
-                or current_token_total + token_count > token_limit
-            ):
-                flush_batch(
-                    "threshold-reached",
-                    ids_ref=ids,
-                    documents_ref=documents,
-                    metadatas_ref=metadatas,
-                    token_counts_ref=token_counts,
+        else:
+            for row_index, doc_id, text, metadata in document_iterable:
+                process_document(
+                    row_index,
+                    doc_id,
+                    text,
+                    metadata,
+                    source_csv=csv_path,
                 )
 
-            ids.append(doc_id)
-            documents.append(text)
-            metadatas.append(metadata)
-            token_counts.append(token_count)
-            current_token_total += token_count
-
-            if len(ids) >= effective_batch_size:
-                flush_batch(
-                    "batch-size-limit",
-                    ids_ref=ids,
-                    documents_ref=documents,
-                    metadatas_ref=metadatas,
-                    token_counts_ref=token_counts,
-                )
-            elif current_token_total >= token_limit:
-                flush_batch(
-                    "token-limit",
-                    ids_ref=ids,
-                    documents_ref=documents,
-                    metadatas_ref=metadatas,
-                    token_counts_ref=token_counts,
-                )
-
-        flush_batch(
+        effective_batch_size = flush_batch(
             "final",
             ids_ref=ids,
             documents_ref=documents,
             metadatas_ref=metadatas,
             token_counts_ref=token_counts,
+            row_numbers_ref=row_numbers,
+            source_csv=csv_path,
+            batch_limit=effective_batch_size,
         )
 
         counts[model_name] = added

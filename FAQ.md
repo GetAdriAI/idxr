@@ -24,6 +24,8 @@ vectorize.py index \
   --partition-out-dir ./chroma_cloud_runs
 ```
 
+Prefer the managed Cloud client? Swap in `--client-type cloud` with the same token, and optionally `--chroma-cloud-tenant` / `--chroma-cloud-database` / `--chroma-cloud-host` overrides. The CLI falls back to `CHROMA_*` environment variables when flags are omitted.
+
 ### Which environment variables do I need before running the indexer?
 - `OPENAI_API_KEY` – API key for OpenAI embeddings (required unless you pass `--openai-api-key`).
 - Chroma Cloud / HTTP client settings fall back to the following env vars when CLI flags are omitted:
@@ -58,3 +60,6 @@ The state file only updates after a successful `upsert`. If the process dies bet
 
 ### Can I resume an interrupted partition run?
 Yes. Every partition keeps its own resume metadata in `<partition-out-dir>/<partition>/collection_resume_state.json`, so subsequent runs skip completed models.
+
+### Does `prepare_datasets.py` validate rows against the Pydantic models?
+No. The prepare step focuses on CSV hygiene—fixing headers, delimiters, malformed rows, and partition manifests. Pydantic validation happens later when `vectorize.py index` streams each row through the target `ModelSpec`, so schema errors are reported during indexing.

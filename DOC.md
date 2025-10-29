@@ -62,6 +62,12 @@ vectorize.py index \
 
 Row digests keep the old partitions untouched while the new ones stack on top.
 Each partition also writes `<model>.digests` sidecars so later runs can reload dedupe hashes without re-scanning the CSVs.
+When targeting Chroma Cloud, the indexer now creates one collection per partition (optionally prefixed via `--collection`); local persistent runs continue to use the single collection name you supply.
+Using `--delete-stale` in this mode drops the whole per-partition collection before replacements are indexed, mirroring the previous single-collection cleanup semantics.
+Need a lightweight smoke test? Add `--e2e-test-run` to any indexing command to sample random rows from every CSV, index just those records, and produce an audit JSON of what was ingested.
+The sampling mode works with both local persistent stores (supply `--persist-dir`) and Chroma Cloud HTTP runs, giving you a consistent validation path before committing to a full index.
+Remember that `prepare_datasets.py` only normalises CSV structure; the actual Pydantic validation happens when `vectorize.py` streams rows through `iter_documents()`, so schema errors surface during indexing rather than preprocessing.
+Running against Chroma Cloud? Use `--client-type cloud --chroma-api-token ...` (optionally `--chroma-cloud-tenant`/`--chroma-cloud-database`) or stick with the lower-level `--client-type http` flags when you want to specify headers manually.
 
 ### 3. Add New Models
 

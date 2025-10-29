@@ -6,6 +6,7 @@ import argparse
 import json
 import logging
 import os
+import random
 import shutil
 import textwrap
 from datetime import datetime, timezone
@@ -15,6 +16,12 @@ from typing import Any, Dict, List, Mapping, Optional, Sequence, Tuple
 import chromadb
 
 from .configuration import ModelConfig, generate_stub_config, load_config
+from .collection_strategies import (
+    CollectionStrategy,
+    FixedCollectionStrategy,
+    PartitionCollectionStrategy,
+)
+from .e2e import E2ETestConfig, E2ETestRecorder
 from .indexing import (
     InvalidCollectionError,
     create_embedding_function,
@@ -183,6 +190,35 @@ class VectorizeCLI:
                     --model kb.std.ecc_6_0_ehp_7.registry:MODEL_REGISTRY \\
                     --partition-manifest build/partitions/manifest.json \\
                     --partition-out-dir ./chroma_partitions --collection ecc-std
+
+                # Smoke-test a manifest run by sampling 50 rows per CSV
+                vectorize.py index \\
+                    --model kb.std.ecc_6_0_ehp_7.registry:MODEL_REGISTRY \\
+                    --partition-manifest build/partitions/manifest.json \\
+                    --partition-out-dir ./chroma_partitions \\
+                    --collection ecc-std \\
+                    --e2e-test-run --e2e-sample-size 50 \\
+                    --e2e-output build/vector/e2e_samples.json
+
+                # Run partitions against Chroma Cloud
+                vectorize.py index \\
+                    --model kb.std.ecc_6_0_ehp_7.registry:MODEL_REGISTRY \\
+                    --partition-manifest build/partitions/manifest.json \\
+                    --partition-out-dir ./chroma_partitions \\
+                    --client-type cloud \\
+                    --chroma-api-token "$CHROMA_TOKEN" \\
+                    --collection ecc-std
+
+                # Sample 25 rows per CSV when targeting Chroma Cloud
+                vectorize.py index \\
+                    --model kb.std.ecc_6_0_ehp_7.registry:MODEL_REGISTRY \\
+                    --partition-manifest build/partitions/manifest.json \\
+                    --partition-out-dir ./chroma_partitions \\
+                    --client-type cloud \\
+                    --chroma-api-token "$CHROMA_TOKEN" \\
+                    --collection ecc-std \\
+                    --e2e-test-run --e2e-sample-size 25 \\
+                    --e2e-output build/vector/e2e_cloud_samples.json
                 """
             ),
         )
@@ -193,8 +229,11 @@ class VectorizeCLI:
         )
         index_parser.add_argument(
             "--collection",
-            required=True,
-            help="Name of the ChromaDB collection to create or update.",
+            help=(
+                "Collection name or prefix, depending on the active strategy. "
+                "Required for the persistent client; optional for partition-aware "
+                "HTTP runs where each partition becomes its own collection."
+            ),
         )
         index_parser.add_argument(
             "--persist-dir",
@@ -249,8 +288,37 @@ class VectorizeCLI:
             help="Skip CSV validation step before indexing (use with caution).",
         )
         index_parser.add_argument(
+            "--e2e-test-run",
+            action="store_true",
+            help=(
+                "Enable end-to-end sampling mode: index a random subset of rows from each CSV "
+                "and emit an audit log of sampled entries."
+            ),
+        )
+        index_parser.add_argument(
+            "--e2e-sample-size",
+            type=int,
+            default=100,
+            help="Number of rows to sample per CSV when "
+            "--e2e-test-run is enabled (default: 100).",
+        )
+        index_parser.add_argument(
+            "--e2e-output",
+            type=Path,
+            default=Path("vectorize_e2e_samples.json"),
+            help=(
+                "Path to the audit file that records sampled rows during --e2e-test-run "
+                "(defaults to ./vectorize_e2e_samples.json)."
+            ),
+        )
+        index_parser.add_argument(
+            "--e2e-random-seed",
+            type=int,
+            help="Optional random seed for reproducible --e2e-test-run sampling.",
+        )
+        index_parser.add_argument(
             "--client-type",
-            choices=("persistent", "http"),
+            choices=("persistent", "http", "cloud"),
             default="persistent",
             help="Chroma client implementation to use (default: persistent).",
         )
@@ -280,6 +348,25 @@ class VectorizeCLI:
         index_parser.add_argument(
             "--chroma-database",
             help="Database identifier header for Chroma Cloud (sets X-Chroma-Database).",
+        )
+        index_parser.add_argument(
+            "--chroma-cloud-tenant",
+            help="Tenant identifier when using the Cloud client "
+            "(equivalent to --chroma-tenant).",
+        )
+        index_parser.add_argument(
+            "--chroma-cloud-database",
+            help="Database identifier when using the Cloud client "
+            "(equivalent to --chroma-database).",
+        )
+        index_parser.add_argument(
+            "--chroma-cloud-host",
+            help="Override the Chroma Cloud host (defaults to api.trychroma.com).",
+        )
+        index_parser.add_argument(
+            "--chroma-cloud-port",
+            type=int,
+            help="Override the Chroma Cloud port (defaults to 443).",
         )
         index_parser.add_argument(
             "--partition-dir",
@@ -515,6 +602,40 @@ class VectorizeCLI:
 
         return host, port, ssl_flag, headers
 
+    @staticmethod
+    def _resolve_cloud_settings(
+        args: argparse.Namespace,
+    ) -> Tuple[Optional[str], Optional[str], Optional[str], str, int, bool]:
+        tenant = (
+            args.chroma_cloud_tenant
+            or args.chroma_tenant
+            or os.getenv("CHROMA_CLOUD_TENANT")
+            or os.getenv("CHROMA_TENANT")
+        )
+        database = (
+            args.chroma_cloud_database
+            or args.chroma_database
+            or os.getenv("CHROMA_CLOUD_DATABASE")
+            or os.getenv("CHROMA_DATABASE")
+        )
+        api_key = args.chroma_api_token or os.getenv("CHROMA_API_TOKEN")
+        host = (
+            args.chroma_cloud_host
+            or os.getenv("CHROMA_CLOUD_HOST")
+            or "api.trychroma.com"
+        )
+        port_value = args.chroma_cloud_port or os.getenv("CHROMA_CLOUD_PORT")
+        port = 443
+        if port_value is not None:
+            try:
+                port = int(port_value)
+            except (TypeError, ValueError):
+                logging.warning(
+                    "Ignoring invalid Chroma Cloud port value '%s'", port_value
+                )
+        ssl_flag = True
+        return tenant, database, api_key, host, port, ssl_flag
+
     def _build_chroma_client(
         self,
         *,
@@ -524,6 +645,12 @@ class VectorizeCLI:
         http_port: Optional[int],
         http_ssl: bool,
         http_headers: Mapping[str, str],
+        cloud_tenant: Optional[str] = None,
+        cloud_database: Optional[str] = None,
+        cloud_api_key: Optional[str] = None,
+        cloud_host: str = "api.trychroma.com",
+        cloud_port: int = 443,
+        cloud_ssl: bool = True,
     ):
         """Create the ChromaDB client used for persistence."""
         if client_type == "persistent":
@@ -546,6 +673,20 @@ class VectorizeCLI:
             if http_port is not None:
                 client_kwargs["port"] = int(http_port)
             return chromadb.HttpClient(**client_kwargs)
+        if client_type == "cloud":
+            if cloud_api_key is None:
+                raise ValueError(
+                    "--chroma-api-token (or CHROMA_API_TOKEN) "
+                    "is required when --client-type=cloud."
+                )
+            return chromadb.CloudClient(
+                tenant=cloud_tenant,
+                database=cloud_database,
+                api_key=cloud_api_key,
+                cloud_host=cloud_host,
+                cloud_port=int(cloud_port),
+                enable_ssl=bool(cloud_ssl),
+            )
         raise ValueError(f"Unsupported client type: {client_type}")
 
     def _create_collection(
@@ -559,6 +700,12 @@ class VectorizeCLI:
         http_port: Optional[int],
         http_ssl: bool,
         http_headers: Mapping[str, str],
+        cloud_tenant: Optional[str],
+        cloud_database: Optional[str],
+        cloud_api_key: Optional[str],
+        cloud_host: str,
+        cloud_port: int,
+        cloud_ssl: bool,
     ):
         """Create or retrieve the target collection."""
         client = self._build_chroma_client(
@@ -568,16 +715,51 @@ class VectorizeCLI:
             http_port=http_port,
             http_ssl=http_ssl,
             http_headers=http_headers,
+            cloud_tenant=cloud_tenant,
+            cloud_database=cloud_database,
+            cloud_api_key=cloud_api_key,
+            cloud_host=cloud_host,
+            cloud_port=cloud_port,
+            cloud_ssl=cloud_ssl,
         )
+
+        metadata: Dict[str, Any] = {}
+        model_name_attr = getattr(embedding_function, "model_name", None)
+        if isinstance(model_name_attr, str) and model_name_attr:
+            metadata["embedding_model"] = model_name_attr
+
         if client_type == "persistent":
-            return client.get_or_create_collection(
+            collection = client.get_or_create_collection(
                 name=collection_name,
                 embedding_function=embedding_function,
+                metadata=metadata or None,
             )
-        return client.get_or_create_collection(
-            name=collection_name,
-            embedding_function=embedding_function,
-        )
+        elif client_type == "http":
+            collection = client.get_or_create_collection(
+                name=collection_name,
+                embedding_function=embedding_function,
+                metadata=metadata or None,
+            )
+        else:  # cloud client
+            collection = client.get_or_create_collection(
+                name=collection_name,
+                embedding_model=model_name_attr,
+                metadata=metadata or None,
+            )
+        if metadata:
+            existing_meta = getattr(collection, "metadata", None)
+            if not isinstance(existing_meta, Mapping):
+                existing_meta = None
+            if existing_meta != metadata:
+                try:
+                    collection.modify(metadata=metadata)
+                except Exception as exc:  # pragma: no cover - defensive
+                    logging.debug(
+                        "Unable to update collection metadata for %s: %s",
+                        collection_name,
+                        exc,
+                    )
+        return collection
 
     def _run_index_for_config(
         self,
@@ -597,9 +779,16 @@ class VectorizeCLI:
         http_port: Optional[int],
         http_ssl: bool,
         http_headers: Mapping[str, str],
+        cloud_tenant: Optional[str],
+        cloud_database: Optional[str],
+        cloud_api_key: Optional[str],
+        cloud_host: str,
+        cloud_port: int,
+        cloud_ssl: bool,
         model_registry: Mapping[str, ModelSpec],
         extra_metadata: Optional[Mapping[str, Any]] = None,
         model_metadata: Optional[Mapping[str, Mapping[str, Any]]] = None,
+        e2e_config: Optional[E2ETestConfig] = None,
     ) -> int:
         try:
             config = load_config(config_path, model_registry)
@@ -668,6 +857,12 @@ class VectorizeCLI:
             http_port=http_port,
             http_ssl=http_ssl,
             http_headers=http_headers,
+            cloud_tenant=cloud_tenant,
+            cloud_database=cloud_database,
+            cloud_api_key=cloud_api_key,
+            cloud_host=cloud_host,
+            cloud_port=cloud_port,
+            cloud_ssl=cloud_ssl,
         )
 
         counts = index_from_config(
@@ -681,6 +876,7 @@ class VectorizeCLI:
             completion_state_path=resume_state_path,
             extra_metadata=extra_metadata,
             model_metadata=model_metadata,
+            e2e_config=e2e_config,
         )
         total = sum(counts.values())
         logging.info("Indexed %d documents across %d models", total, len(counts))
@@ -693,12 +889,70 @@ class VectorizeCLI:
         embedding_function = create_embedding_function(embedding_model, api_key=api_key)
         return encoder, embedding_function
 
+    def _resolve_collection_strategy(
+        self,
+        *,
+        client_type: str,
+        partition_mode: bool,
+        collection_arg: Optional[str],
+    ) -> CollectionStrategy:
+        """Select the collection naming strategy for the current run."""
+        if partition_mode and client_type in {"http", "cloud"}:
+            if collection_arg:
+                return PartitionCollectionStrategy(prefix=collection_arg)
+            return PartitionCollectionStrategy()
+        if collection_arg is None:
+            raise ValueError(
+                "--collection is required for this indexing mode; supply a name."
+            )
+        return FixedCollectionStrategy(collection_arg)
+
+    def _build_e2e_config(self, args: argparse.Namespace) -> E2ETestConfig:
+        sample_size = max(1, int(args.e2e_sample_size))
+        output_path = args.e2e_output.resolve()
+        rng = (
+            random.Random(int(args.e2e_random_seed))
+            if args.e2e_random_seed is not None
+            else random.Random()
+        )
+        recorder = E2ETestRecorder(output_path=output_path)
+        return E2ETestConfig(
+            sample_size=sample_size,
+            recorder=recorder,
+            rng=rng,
+        )
+
     def _handle_single_index(self, args: argparse.Namespace) -> int:
         if args.config is None:
             logging.error("--config is required when --partition-dir is not provided")
             return 1
 
         client_type = str(args.client_type)
+        try:
+            collection_strategy = self._resolve_collection_strategy(
+                client_type=client_type,
+                partition_mode=False,
+                collection_arg=args.collection,
+            )
+        except ValueError as exc:
+            logging.error(str(exc))
+            return 1
+
+        target_collection = collection_strategy.collection_name(None)
+
+        cloud_tenant: Optional[str] = None
+        cloud_database: Optional[str] = None
+        cloud_api_key: Optional[str] = None
+        cloud_host_override = "api.trychroma.com"
+        cloud_port_override = 443
+        cloud_ssl = True
+        e2e_config: Optional[E2ETestConfig] = None
+        if args.e2e_test_run:
+            if args.resume:
+                logging.error("--e2e-test-run cannot be combined with --resume")
+                return 1
+            e2e_config = self._build_e2e_config(args)
+
         persist_dir: Optional[Path] = args.persist_dir
         if client_type == "persistent":
             if persist_dir is None:
@@ -708,7 +962,7 @@ class VectorizeCLI:
                 return 1
         else:
             if persist_dir is None:
-                default_state_dir = Path.cwd() / ".vectorize_state" / args.collection
+                default_state_dir = Path.cwd() / ".vectorize_state" / target_collection
                 logging.info(
                     "Using default state directory %s for resume metadata.",
                     default_state_dir,
@@ -731,21 +985,65 @@ class VectorizeCLI:
             return 1
 
         http_host, http_port, http_ssl, http_headers = self._resolve_http_settings(args)
+        (
+            cloud_tenant,
+            cloud_database,
+            cloud_api_key,
+            cloud_host_override,
+            cloud_port_override,
+            cloud_ssl,
+        ) = (None, None, None, "api.trychroma.com", 443, True)
 
         if client_type == "http" and not http_host:
             logging.error(
                 "--chroma-server-host must be provided when --client-type=http"
             )
             return 1
+        if client_type == "cloud":
+            (
+                cloud_tenant,
+                cloud_database,
+                cloud_api_key,
+                cloud_host_override,
+                cloud_port_override,
+                cloud_ssl,
+            ) = self._resolve_cloud_settings(args)
+            if cloud_api_key is None:
+                logging.error(
+                    "--chroma-api-token (or CHROMA_API_TOKEN) "
+                    "is required when --client-type=cloud"
+                )
+                return 1
+
+        if client_type == "cloud" and args.delete_stale:
+            logging.warning(
+                "--delete-stale is not supported with "
+                "--client-type=cloud; skipping cleanup step."
+            )
+        if client_type == "cloud":
+            (
+                cloud_tenant,
+                cloud_database,
+                cloud_api_key,
+                cloud_host_override,
+                cloud_port_override,
+                cloud_ssl,
+            ) = self._resolve_cloud_settings(args)
+            if cloud_api_key is None:
+                logging.error(
+                    "--chroma-api-token (or CHROMA_API_TOKEN) "
+                    "is required when --client-type=cloud"
+                )
+                return 1
 
         if persist_dir is None:
             raise RuntimeError("Persist directory could not be determined.")
         persist_dir = persist_dir.resolve()
         persist_dir.mkdir(parents=True, exist_ok=True)
 
-        return self._run_index_for_config(
+        result = self._run_index_for_config(
             config_path=args.config.resolve(),
-            collection_name=args.collection,
+            collection_name=target_collection,
             persist_dir=persist_dir,
             batch_size=args.batch_size,
             embedding_model=args.embedding_model,
@@ -759,10 +1057,27 @@ class VectorizeCLI:
             http_port=http_port,
             http_ssl=http_ssl,
             http_headers=http_headers,
+            cloud_tenant=cloud_tenant,
+            cloud_database=cloud_database,
+            cloud_api_key=cloud_api_key,
+            cloud_host=cloud_host_override,
+            cloud_port=cloud_port_override,
+            cloud_ssl=cloud_ssl,
             model_registry=args.model_registry,
             extra_metadata=None,
             model_metadata=None,
+            e2e_config=e2e_config,
         )
+        if result == 0 and e2e_config is not None:
+            try:
+                e2e_config.recorder.write()
+                logging.info(
+                    "E2E sample audit written to %s",
+                    e2e_config.recorder.output_path,
+                )
+            except OSError as exc:
+                logging.warning("Failed to write E2E audit file: %s", exc)
+        return result
 
     def _handle_partition_index(self, args: argparse.Namespace) -> int:
         if args.partition_manifest and args.partition_dir:
@@ -797,6 +1112,13 @@ class VectorizeCLI:
             return 1
 
         partition_model_metadata: Dict[str, Dict[str, Dict[str, Any]]] = {}
+
+        e2e_config: Optional[E2ETestConfig] = None
+        if args.e2e_test_run:
+            if args.resume:
+                logging.error("--e2e-test-run cannot be combined with --resume")
+                return 1
+            e2e_config = self._build_e2e_config(args)
 
         if args.partition_manifest:
             manifest_path = args.partition_manifest
@@ -900,11 +1222,50 @@ class VectorizeCLI:
             return 1
 
         http_host, http_port, http_ssl, http_headers = self._resolve_http_settings(args)
+        (
+            cloud_tenant,
+            cloud_database,
+            cloud_api_key,
+            cloud_host_override,
+            cloud_port_override,
+            cloud_ssl,
+        ) = (None, None, None, "api.trychroma.com", 443, True)
 
         if client_type == "http" and not http_host:
             logging.error(
                 "--chroma-server-host must be provided when --client-type=http"
             )
+            return 1
+        if client_type == "cloud":
+            (
+                cloud_tenant,
+                cloud_database,
+                cloud_api_key,
+                cloud_host_override,
+                cloud_port_override,
+                cloud_ssl,
+            ) = self._resolve_cloud_settings(args)
+            if cloud_api_key is None:
+                logging.error(
+                    "--chroma-api-token (or CHROMA_API_TOKEN) "
+                    "is required when --client-type=cloud"
+                )
+                return 1
+
+        if client_type == "cloud" and args.delete_stale:
+            logging.warning(
+                "--delete-stale is not supported with "
+                "--client-type=cloud; skipping cleanup step."
+            )
+
+        try:
+            collection_strategy = self._resolve_collection_strategy(
+                client_type=client_type,
+                partition_mode=True,
+                collection_arg=args.collection,
+            )
+        except ValueError as exc:
+            logging.error(str(exc))
             return 1
 
         partition_out_root = args.partition_out_dir.resolve()
@@ -934,16 +1295,18 @@ class VectorizeCLI:
                 return 1
 
             partition_persist_dir = partition_out_root / partition_name
+            collection_name = collection_strategy.collection_name(partition_name)
             logging.info(
-                "Indexing partition %s (config=%s, persist_dir=%s)",
+                "Indexing partition %s (collection=%s, config=%s, persist_dir=%s)",
                 partition_name,
+                collection_name,
                 config_path,
                 partition_persist_dir,
             )
 
             result = self._run_index_for_config(
                 config_path=config_path,
-                collection_name=args.collection,
+                collection_name=collection_name,
                 persist_dir=partition_persist_dir,
                 batch_size=args.batch_size,
                 embedding_model=args.embedding_model,
@@ -957,9 +1320,16 @@ class VectorizeCLI:
                 http_port=http_port,
                 http_ssl=http_ssl,
                 http_headers=http_headers,
+                cloud_tenant=cloud_tenant,
+                cloud_database=cloud_database,
+                cloud_api_key=cloud_api_key,
+                cloud_host=cloud_host_override,
+                cloud_port=cloud_port_override,
+                cloud_ssl=cloud_ssl,
                 model_registry=args.model_registry,
                 extra_metadata={"partition_name": partition_name},
                 model_metadata=partition_model_metadata.get(partition_name),
+                e2e_config=e2e_config,
             )
             if result != 0:
                 return result
@@ -970,12 +1340,22 @@ class VectorizeCLI:
             partition_origin_desc,
         )
 
+        if e2e_config is not None:
+            try:
+                e2e_config.recorder.write()
+                logging.info(
+                    "E2E sample audit written to %s",
+                    e2e_config.recorder.output_path,
+                )
+            except OSError as exc:
+                logging.warning("Failed to write E2E audit file: %s", exc)
+
         if args.partition_manifest and args.delete_stale:
             self._delete_stale_partitions(
                 manifest_path=args.partition_manifest.resolve(),
                 partition_out_root=partition_out_root,
                 client_type=client_type,
-                collection_name=args.collection,
+                collection_strategy=collection_strategy,
                 http_host=http_host,
                 http_port=http_port,
                 http_ssl=http_ssl,
@@ -989,7 +1369,7 @@ class VectorizeCLI:
         manifest_path: Path,
         partition_out_root: Path,
         client_type: str,
-        collection_name: str,
+        collection_strategy: CollectionStrategy,
         http_host: Optional[str],
         http_port: Optional[int],
         http_ssl: bool,
@@ -1060,35 +1440,77 @@ class VectorizeCLI:
                     http_ssl=http_ssl,
                     http_headers=http_headers,
                 )
-                collection = client.get_collection(name=collection_name)
             except Exception as exc:  # pragma: no cover - defensive
                 logging.error(
                     "Failed to prepare Chroma client for stale deletion: %s", exc
                 )
                 return
-
-            for entry in stale_entries:
-                name = entry.get("name")
-                if not name:
-                    continue
+            if isinstance(collection_strategy, PartitionCollectionStrategy):
+                for entry in stale_entries:
+                    name = entry.get("name")
+                    if not name:
+                        continue
+                    try:
+                        target_collection = collection_strategy.collection_name(name)
+                    except ValueError:
+                        logging.warning(
+                            "Unable to resolve collection name "
+                            "for stale partition %s; skipping.",
+                            name,
+                        )
+                        continue
+                    try:
+                        client.delete_collection(name=target_collection)
+                        logging.info(
+                            "Deleted collection %s for stale partition '%s'",
+                            target_collection,
+                            name,
+                        )
+                    except Exception as exc:  # pragma: no cover - defensive
+                        logging.warning(
+                            "Failed to delete collection %s for partition %s (%s)",
+                            target_collection,
+                            name,
+                            exc,
+                        )
+                        continue
+                    entry["deleted"] = True
+                    entry["deleted_at"] = timestamp
+                    deleted_names.append(name)
+            else:
+                collection_name = collection_strategy.collection_name(None)
                 try:
-                    collection.delete(where={"partition_name": name})
-                    logging.info(
-                        "Deleted stale partition '%s' from collection %s",
-                        name,
-                        collection_name,
-                    )
+                    collection = client.get_collection(name=collection_name)
                 except Exception as exc:  # pragma: no cover - defensive
-                    logging.warning(
-                        "Failed to delete stale partition '%s' from collection %s (%s)",
-                        name,
+                    logging.error(
+                        "Failed to open collection %s for stale deletion: %s",
                         collection_name,
                         exc,
                     )
-                    continue
-                entry["deleted"] = True
-                entry["deleted_at"] = timestamp
-                deleted_names.append(name)
+                    return
+
+                for entry in stale_entries:
+                    name = entry.get("name")
+                    if not name:
+                        continue
+                    try:
+                        collection.delete(where={"partition_name": name})
+                        logging.info(
+                            "Deleted stale partition '%s' from collection %s",
+                            name,
+                            collection_name,
+                        )
+                    except Exception as exc:  # pragma: no cover - defensive
+                        logging.warning(
+                            "Failed to delete stale partition '%s' from collection %s (%s)",
+                            name,
+                            collection_name,
+                            exc,
+                        )
+                        continue
+                    entry["deleted"] = True
+                    entry["deleted_at"] = timestamp
+                    deleted_names.append(name)
 
         if not deleted_names:
             logging.info("No stale partitions were deleted.")
