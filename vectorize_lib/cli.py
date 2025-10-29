@@ -887,6 +887,8 @@ class VectorizeCLI:
             extra_metadata=extra_metadata,
             model_metadata=model_metadata,
             e2e_config=e2e_config,
+            error_report_dir=persist_dir,
+            collection_name=collection_name,
         )
         total = sum(counts.values())
         logging.info("Indexed %d documents across %d models", total, len(counts))

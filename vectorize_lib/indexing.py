@@ -6,10 +6,11 @@ import json
 import logging
 import os
 import re
+import traceback
 from collections import Counter
 from datetime import datetime, timezone
 from pathlib import Path
-from typing import Any, Dict, List, Mapping, Optional, cast
+from typing import Any, Dict, List, Mapping, Optional, Sequence, cast
 
 from chromadb import errors as chroma_errors
 from chromadb.api import Collection
@@ -47,6 +48,125 @@ InvalidCollectionError = cast(
 )
 
 
+def _write_error_report(
+    *,
+    error_dir: Optional[Path],
+    model_name: str,
+    collection_name: Optional[str],
+    reason: str,
+    source_csv: Path,
+    emitted_ids: Sequence[str],
+    emitted_docs: Sequence[str],
+    emitted_metas: Sequence[MetadataDict],
+    emitted_rows: Sequence[int],
+    token_counts: Sequence[int],
+    token_total: int,
+    resume_state: ResumeState,
+    exception: BaseException,
+    traceback_text: str,
+) -> Optional[Path]:
+    """Persist error context for failed batches to a YAML-compatible file."""
+
+    if error_dir is None:
+        return None
+
+    try:
+        target_root = (error_dir / "errors").resolve()
+        target_root.mkdir(parents=True, exist_ok=True)
+    except OSError as exc:
+        logging.warning(
+            "Unable to prepare error directory %s for %s: %s",
+            error_dir,
+            model_name,
+            exc,
+        )
+        return None
+
+    now = datetime.now(timezone.utc).replace(tzinfo=None)
+    timestamp = now.isoformat(timespec="seconds")
+    sortable_stamp = now.strftime("%Y%m%dT%H%M%S%fZ")
+    safe_model = re.sub(r"[^0-9A-Za-z_.-]", "_", model_name) or "model"
+    filename = f"{sortable_stamp}_{safe_model}.yaml"
+    candidate = target_root / filename
+    counter = 1
+    while candidate.exists():
+        candidate = target_root / f"{sortable_stamp}_{safe_model}_{counter}.yaml"
+        counter += 1
+
+    partition_names = {
+        meta.get("partition_name")
+        for meta in emitted_metas
+        if isinstance(meta, Mapping) and meta.get("partition_name")
+    }
+    partition_name = None
+    if partition_names:
+        partition_name = next(iter(partition_names))
+
+    rows_payload: List[Dict[str, Any]] = []
+    for row_idx, doc_id, document, metadata, token_count in zip(
+        emitted_rows,
+        emitted_ids,
+        emitted_docs,
+        emitted_metas,
+        token_counts,
+    ):
+        rows_payload.append(
+            {
+                "row_index": int(row_idx),
+                "id": doc_id,
+                "document": document,
+                "metadata": metadata,
+                "token_count": int(token_count),
+            }
+        )
+
+    resume_payload: Dict[str, Any] = {
+        "row_index": int(getattr(resume_state, "row_index", 0)),
+    }
+    if getattr(resume_state, "offset", None) is not None:
+        resume_payload["offset"] = int(cast(int, resume_state.offset))
+    if getattr(resume_state, "fieldnames", None):
+        resume_payload["fieldnames"] = list(cast(List[str], resume_state.fieldnames))
+
+    payload: Dict[str, Any] = {
+        "timestamp": timestamp,
+        "model": model_name,
+        "collection": collection_name,
+        "partition_name": partition_name,
+        "source_csv": str(source_csv),
+        "reason": reason,
+        "batch": {
+            "size": len(emitted_ids),
+            "token_total": int(token_total),
+        },
+        "resume_state": resume_payload,
+        "rows": rows_payload,
+        "exception": {
+            "type": exception.__class__.__name__,
+            "message": str(exception),
+            "traceback": traceback_text,
+        },
+    }
+
+    try:
+        try:
+            import yaml  # type: ignore
+        except ImportError:  # pragma: no cover - optional dependency
+            yaml = None  # type: ignore
+
+        if yaml is not None:  # type: ignore
+            serialized = yaml.safe_dump(payload, sort_keys=False)  # type: ignore
+        else:
+            serialized = json.dumps(payload, indent=2)
+
+        candidate.write_text(serialized, encoding="utf-8")
+    except OSError as exc:  # pragma: no cover - defensive
+        logging.warning("Failed to write error report %s: %s", candidate, exc)
+        return None
+
+    return candidate
+
+
 def create_embedding_function(
     model_name: str, api_key: Optional[str] = None
 ) -> EmbeddingFunction[Any]:
@@ -78,6 +198,8 @@ def index_from_config(
     extra_metadata: Optional[Mapping[str, MetadataValue]] = None,
     model_metadata: Optional[Mapping[str, Mapping[str, MetadataValue]]] = None,
     e2e_config: Optional[E2ETestConfig] = None,
+    error_report_dir: Optional[Path] = None,
+    collection_name: Optional[str] = None,
 ) -> Dict[str, int]:
     """Index documents from CSV files into the collection, returning counts per model."""
     if batch_size < 1:
@@ -90,6 +212,8 @@ def index_from_config(
         raise ValueError("E2E test runs do not support resume mode.")
 
     completion_state = completion_state or {}
+    if error_report_dir is None and completion_state_path is not None:
+        error_report_dir = completion_state_path.parent
     resume_counts: Counter[str] = Counter()
     resume_missing = 0
     if resume:
@@ -308,6 +432,8 @@ def index_from_config(
             state_ref: ResumeState = resume_state,
             source_csv: Path,
             batch_limit: int,
+            error_dir: Optional[Path] = error_report_dir,
+            collection_value: Optional[str] = collection_name,
         ) -> int:
             nonlocal ids, documents, metadatas, token_counts, row_numbers
             nonlocal current_token_total, added, batches, effective_batch_size
@@ -475,7 +601,24 @@ def index_from_config(
                         )
                         retry_after_duplicate = True
                         break
-                    except Exception:  # pragma: no cover - defensive
+                    except Exception as exc:  # pragma: no cover - defensive
+                        traceback_text = traceback.format_exc()
+                        error_path = _write_error_report(
+                            error_dir=error_dir,
+                            model_name=model_key,
+                            collection_name=collection_value,
+                            reason=reason,
+                            source_csv=source_csv,
+                            emitted_ids=emitted_ids,
+                            emitted_docs=emitted_docs,
+                            emitted_metas=emitted_metas,
+                            emitted_rows=emitted_rows,
+                            token_counts=emitted_tokens,
+                            token_total=emitted_token_total,
+                            resume_state=state_ref,
+                            exception=exc,
+                            traceback_text=traceback_text,
+                        )
                         try:
                             context_chunks = []
                             for doc_id, row_num, meta in zip(
@@ -502,6 +645,12 @@ def index_from_config(
                             reason,
                             context_summary,
                         )
+                        if error_path is not None:
+                            logging.error(
+                                "Error report for model %s persisted to %s",
+                                model_key,
+                                error_path,
+                            )
                         raise
                     else:
                         break
