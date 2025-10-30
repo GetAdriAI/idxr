@@ -27,6 +27,11 @@ from .documents import (
     iter_documents,
 )
 from .e2e import E2ETestConfig
+from .token_management import (
+    truncate_text_intelligently,
+    suggest_truncation_strategy,
+    log_truncation_stats,
+)
 from indexer.models import ModelSpec
 from .utils import (
     MAX_DOCS_PER_REQUEST,
@@ -200,6 +205,7 @@ def index_from_config(
     e2e_config: Optional[E2ETestConfig] = None,
     error_report_dir: Optional[Path] = None,
     collection_name: Optional[str] = None,
+    default_truncation_strategy: str = "auto",
 ) -> Dict[str, int]:
     """Index documents from CSV files into the collection, returning counts per model."""
     if batch_size < 1:
@@ -759,22 +765,77 @@ def index_from_config(
             token_counts_list: List[int] = token_counts,
             row_numbers_list: List[int] = row_numbers,
             model_key: str = current_model_name,
+            model_config_ref: ModelConfig = model_config,
+            spec_ref: ModelSpec = spec,
         ) -> None:
             nonlocal current_token_total, effective_batch_size
 
             token_count = count_tokens(text, encoder)
             current_batch_size = effective_batch_size
 
-            if token_count > token_limit:
-                if token_count > MAX_TOKENS_PER_REQUEST:
-                    logging.error(
-                        "Skipping document %s in %s: %s tokens exceed hard API limit %s.",
+            # Handle oversized documents with intelligent truncation
+            if token_count > MAX_TOKENS_PER_REQUEST:
+                logging.warning(
+                    "Document %s in %s has %s tokens (exceeds API limit %s). "
+                    "Applying intelligent truncation.",
+                    doc_id,
+                    model_key,
+                    format_int(token_count),
+                    format_int(MAX_TOKENS_PER_REQUEST),
+                )
+
+                # Determine truncation strategy with precedence:
+                # 1. Per-model config (most specific)
+                # 2. CLI argument (global default)
+                # 3. Auto-detection (fallback)
+                strategy = model_config_ref.truncation_strategy
+                if strategy is None or strategy == "auto":
+                    strategy = default_truncation_strategy
+                if strategy == "auto":
+                    strategy = suggest_truncation_strategy(
+                        text,
+                        model_key,
+                        spec_ref.semantic_fields,
+                    )
+
+                # Truncate intelligently, leaving some headroom for safety
+                target_tokens = int(MAX_TOKENS_PER_REQUEST * 0.95)  # 5% safety margin
+                truncated_text, final_tokens, was_truncated = (
+                    truncate_text_intelligently(
+                        text,
+                        max_tokens=target_tokens,
+                        encoder=encoder,
+                        strategy=strategy,
+                    )
+                )
+
+                if was_truncated:
+                    # Log truncation statistics
+                    log_truncation_stats(
                         doc_id,
                         model_key,
-                        format_int(token_count),
-                        format_int(MAX_TOKENS_PER_REQUEST),
+                        token_count,
+                        final_tokens,
+                        strategy,
+                    )
+
+                    # Use truncated version
+                    text = truncated_text
+                    token_count = final_tokens
+
+                    # Add metadata flag to indicate truncation
+                    metadata["truncated"] = True
+                    metadata["original_tokens"] = int(token_count)
+                else:
+                    # Should not happen, but fallback to skip
+                    logging.error(
+                        "Failed to truncate document %s in %s. Skipping.",
+                        doc_id,
+                        model_key,
                     )
                     return
+
+            if token_count > token_limit:
                 if ids_list:
                     effective_batch_size = flush_batch(
                         "pre-token-limit-excess",

@@ -16,6 +16,9 @@ class ModelConfig:
 
     path: Optional[Path]
     columns: Dict[str, str]
+    truncation_strategy: Optional[str] = (
+        None  # "end", "start", "middle_out", "sentences", or None for auto
+    )
 
 
 def load_config(
@@ -42,6 +45,8 @@ def load_config(
             )
         raw_path = entry.get("path")
         columns = entry.get("columns", {})
+        truncation_strategy = entry.get("truncation_strategy")
+
         if raw_path in (None, "", []):
             path = None
         else:
@@ -58,7 +63,21 @@ def load_config(
                     "must map strings to strings"
                 )
             normalized_columns[key] = value
-        config[model_name] = ModelConfig(path=path, columns=normalized_columns)
+
+        # Validate truncation strategy if provided
+        if truncation_strategy is not None:
+            valid_strategies = ["end", "start", "middle_out", "sentences"]
+            if truncation_strategy not in valid_strategies:
+                raise ValueError(
+                    f"Configuration value for '{model_name}.truncation_strategy' "
+                    f"must be one of {valid_strategies} or null"
+                )
+
+        config[model_name] = ModelConfig(
+            path=path,
+            columns=normalized_columns,
+            truncation_strategy=truncation_strategy,
+        )
     return config
 
 

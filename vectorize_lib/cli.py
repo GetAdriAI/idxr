@@ -361,6 +361,18 @@ class VectorizeCLI:
             help="Skip CSV validation step before indexing (use with caution).",
         )
         index_parser.add_argument(
+            "--truncation-strategy",
+            choices=["end", "start", "middle_out", "sentences", "auto"],
+            default="auto",
+            help=(
+                "Default truncation strategy for documents exceeding token limits. "
+                "Choices: 'end' (keep beginning), 'start' (keep end), "
+                "'middle_out' (preserve both ends), 'sentences' (complete sentences), "
+                "'auto' (automatically detect best strategy). "
+                "Can be overridden per-model in config. Default: auto."
+            ),
+        )
+        index_parser.add_argument(
             "--e2e-test-run",
             action="store_true",
             help=(
@@ -874,6 +886,7 @@ class VectorizeCLI:
         cloud_port: int,
         cloud_ssl: bool,
         model_registry: Mapping[str, ModelSpec],
+        truncation_strategy: str = "auto",
         extra_metadata: Optional[Mapping[str, Any]] = None,
         model_metadata: Optional[Mapping[str, Mapping[str, Any]]] = None,
         e2e_config: Optional[E2ETestConfig] = None,
@@ -967,6 +980,7 @@ class VectorizeCLI:
             e2e_config=e2e_config,
             error_report_dir=persist_dir,
             collection_name=collection_name,
+            default_truncation_strategy=truncation_strategy,
         )
         total = sum(counts.values())
         logging.info("Indexed %d documents across %d models", total, len(counts))
@@ -1154,6 +1168,7 @@ class VectorizeCLI:
             cloud_port=cloud_port_override,
             cloud_ssl=cloud_ssl,
             model_registry=args.model_registry,
+            truncation_strategy=args.truncation_strategy,
             extra_metadata=None,
             model_metadata=None,
             e2e_config=e2e_config,
@@ -1458,6 +1473,7 @@ class VectorizeCLI:
                 cloud_port=cloud_port_override,
                 cloud_ssl=cloud_ssl,
                 model_registry=args.model_registry,
+                truncation_strategy=args.truncation_strategy,
                 extra_metadata={"partition_name": partition_name},
                 model_metadata=partition_model_metadata.get(partition_name),
                 e2e_config=e2e_config,

@@ -665,18 +665,153 @@ curl https://api.openai.com/v1/me \
 
 **Symptoms:**
 ```
-ERROR Skipping document Table:abc123...: 12500 tokens exceed hard API limit 8191
+ERROR Document Table:abc123...: 10321 tokens exceed API limit 8192
 ```
 
 **Causes:**
-- Single document exceeds maximum tokens
-- Usually long text fields (descriptions, documentation)
+- Single document exceeds maximum tokens (8192 for text-embedding-3-small/large)
+- Usually long text fields (descriptions, documentation, concatenated data)
 
 **Solutions:**
 
-1. **Reduce document size at source** - truncate long fields in CSV
-2. **Adjust semantic fields** - exclude very long fields from indexing
-3. **Document will be skipped** - logged but indexing continues for other docs
+#### Automatic Intelligent Truncation (Built-in)
+
+As of the latest version, the indexer **automatically handles oversized documents** using intelligent truncation strategies. When a document exceeds the token limit:
+
+1. **Detection**: System detects token count > API limit
+2. **Strategy Selection**: Chooses best truncation approach based on model type:
+   - **Tables**: Keep beginning (table name, key info)
+   - **Documentation**: Preserve sentences for readability
+   - **Technical specs**: Keep both start and end (middle_out)
+3. **Truncation**: Reduces to 95% of limit (5% safety margin)
+4. **Metadata**: Adds `truncated: true` and `original_tokens` to document metadata
+5. **Indexing**: Continues normally with truncated version
+
+**Log output:**
+```
+WARNING Document Table:abc123... has 10,321 tokens (exceeds API limit 8,192).
+        Applying intelligent truncation.
+WARNING Document Table:abc123... (Table) truncated: 10321 → 7782 tokens
+        (24.6% reduction) using strategy 'end'
+```
+
+**Truncation Strategies:**
+
+1. **`end`** (default for tables): Keeps the beginning intact
+   ```
+   [Full beginning content...]
+
+   [... content truncated due to length ...]
+   ```
+
+2. **`middle_out`** (default for technical specs): Preserves start and end
+   ```
+   [Important header/intro...]
+
+   [... middle section truncated due to length ...]
+
+   [Important conclusions/summary...]
+   ```
+
+3. **`sentences`** (for documentation): Maintains complete sentences
+   ```
+   First few complete sentences preserved...
+
+   [... middle content truncated due to length ...]
+
+   Last few complete sentences preserved...
+   ```
+
+4. **`start`**: Keeps the end intact (rare, for logs/timelines)
+   ```
+   [... earlier content truncated due to length ...]
+
+   [Recent/important ending content...]
+   ```
+
+**Configuring Truncation Strategy:**
+
+The truncation strategy can be configured at multiple levels with the following precedence order (highest to lowest):
+
+1. **Per-Model Configuration** (most specific)
+   ```json
+   {
+     "Table": {
+       "path": "tables.csv",
+       "columns": {
+         "id": "table_id",
+         "description": "table_description"
+       },
+       "truncation_strategy": "end"
+     },
+     "Documentation": {
+       "path": "docs.csv",
+       "columns": {
+         "id": "doc_id",
+         "content": "content"
+       },
+       "truncation_strategy": "sentences"
+     }
+   }
+   ```
+
+2. **CLI Argument** (global default for all models)
+   ```bash
+   vectorize index --config models.json \
+                   --truncation-strategy middle_out
+   ```
+
+   Available choices: `end`, `start`, `middle_out`, `sentences`, `auto`
+
+3. **Auto-Detection** (fallback when not specified)
+   - Automatically selects the best strategy based on:
+     - Model name patterns (e.g., "Table" → `end`)
+     - Semantic field types
+     - Content characteristics
+
+**Precedence Examples:**
+
+```bash
+# Example 1: Global default with per-model override
+vectorize index --config models.json --truncation-strategy sentences
+
+# Models.json:
+# {
+#   "Table": {"truncation_strategy": "end"},  # Uses 'end' (config overrides CLI)
+#   "Documentation": {}                        # Uses 'sentences' (from CLI)
+# }
+```
+
+```bash
+# Example 2: Auto-detection
+vectorize index --config models.json --truncation-strategy auto
+
+# Each model will have strategy auto-detected based on its characteristics
+```
+
+**Query for Truncated Documents:**
+
+```python
+# Find all truncated documents
+results = collection.query(
+    query_texts=["search query"],
+    where={"truncated": True},
+    n_results=100
+)
+
+# Check original token counts
+for doc, metadata in zip(results['documents'], results['metadatas']):
+    if metadata.get('truncated'):
+        print(f"Original tokens: {metadata['original_tokens']}")
+```
+
+**Manual Control (if needed):**
+
+If you want to handle truncation yourself at the source:
+
+1. **Pre-process CSVs** - truncate long fields before indexing
+2. **Adjust semantic fields** - exclude very long fields from semantic indexing
+3. **Split documents** - break large documents into multiple smaller ones
 
 ### Duplicate ID Errors
 
