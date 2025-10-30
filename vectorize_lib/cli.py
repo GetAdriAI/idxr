@@ -377,9 +377,19 @@ class VectorizeCLI:
             type=int,
             default=TOKEN_SAFETY_LIMIT,
             help=(
-                f"Maximum tokens per document for the embedding model. "
-                f"Documents exceeding this limit will be truncated. "
-                f"Default: {TOKEN_SAFETY_LIMIT} (suitable for OpenAI embedding models)."
+                "Maximum tokens per batch request sent to embedding API. "
+                "Total token limit for all documents in a single batch. "
+                f"Default: {TOKEN_SAFETY_LIMIT}."
+            ),
+        )
+        index_parser.add_argument(
+            "--embedding-token-limit",
+            type=int,
+            default=8191,
+            help=(
+                "Maximum tokens per individual document for embedding. "
+                "Documents exceeding this limit will be truncated. "
+                "Default: 8191 (OpenAI embedding model limit)."
             ),
         )
         index_parser.add_argument(
@@ -898,6 +908,7 @@ class VectorizeCLI:
         model_registry: Mapping[str, ModelSpec],
         truncation_strategy: str = "auto",
         token_limit: int = TOKEN_SAFETY_LIMIT,
+        embedding_token_limit: int = 8191,
         extra_metadata: Optional[Mapping[str, Any]] = None,
         model_metadata: Optional[Mapping[str, Mapping[str, Any]]] = None,
         e2e_config: Optional[E2ETestConfig] = None,
@@ -985,6 +996,7 @@ class VectorizeCLI:
             resume=resume,
             encoder=encoder,
             token_limit=token_limit,
+            embedding_token_limit=embedding_token_limit,
             completion_state=completion_state,
             completion_state_path=resume_state_path,
             extra_metadata=extra_metadata,
@@ -1182,6 +1194,7 @@ class VectorizeCLI:
             model_registry=args.model_registry,
             truncation_strategy=args.truncation_strategy,
             token_limit=args.token_limit,
+            embedding_token_limit=getattr(args, "embedding_token_limit", 8191),
             extra_metadata=None,
             model_metadata=None,
             e2e_config=e2e_config,
@@ -1488,6 +1501,7 @@ class VectorizeCLI:
                 model_registry=args.model_registry,
                 truncation_strategy=args.truncation_strategy,
                 token_limit=args.token_limit,
+                embedding_token_limit=getattr(args, "embedding_token_limit", 8191),
                 extra_metadata={"partition_name": partition_name},
                 model_metadata=partition_model_metadata.get(partition_name),
                 e2e_config=e2e_config,

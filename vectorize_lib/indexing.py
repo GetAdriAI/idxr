@@ -198,6 +198,7 @@ def index_from_config(
     resume_chunk_size: int = 10000,
     encoder: Any = None,
     token_limit: int = TOKEN_SAFETY_LIMIT,
+    embedding_token_limit: int = 8191,
     completion_state: Optional[Dict[str, Any]] = None,
     completion_state_path: Optional[Path] = None,
     extra_metadata: Optional[Mapping[str, MetadataValue]] = None,
@@ -773,12 +774,9 @@ def index_from_config(
             token_count = count_tokens(text, encoder)
             current_batch_size = effective_batch_size
 
-            # Get the per-document token limit for the embedding model
-            # OpenAI embedding models have limits like 8191 tokens
-            # This is different from MAX_TOKENS_PER_REQUEST which is for batching
-            embedding_token_limit = min(token_limit, MAX_TOKENS_PER_REQUEST)
-
             # Handle oversized documents with intelligent truncation
+            # embedding_token_limit is the per-document token limit (e.g., 8191 for OpenAI)
+            # This is different from token_limit which is for batch-level limits
             if token_count > embedding_token_limit:
                 logging.warning(
                     "Document %s in %s has %s tokens (exceeds limit %s). "
