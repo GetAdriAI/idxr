@@ -126,6 +126,24 @@ DROP_DESCRIPTION = textwrap.dedent(
     """
 )
 
+STATUS_DESCRIPTION = textwrap.dedent(
+    """
+    Display the current indexing progress by analyzing resume state files and error reports.
+    Shows which partitions are started, finished, or have errors.
+
+    Examples
+    --------
+    # Basic usage (shows progress from resume state files and errors)
+    vectorize.py status --model kb.std.ecc_6_0_ehp_7.registry:MODEL_REGISTRY \\
+        --partition-out-dir build/vector
+
+    # With config directory (shows which configured models haven't started)
+    vectorize.py status --model kb.std.ecc_6_0_ehp_7.registry:MODEL_REGISTRY \\
+        --partition-out-dir build/vector \\
+        --partition-dir build/partitions
+    """
+)
+
 
 class VectorizeCLI:
     """Command-line interface entry point."""
@@ -666,6 +684,38 @@ class VectorizeCLI:
             help="Optional identifier recorded when updating the manifest.",
         )
         drop_parser.set_defaults(func=self.handle_drop_models)
+
+        status_parser = subparsers.add_parser(
+            "status",
+            parents=[common],
+            help="Display current indexing progress.",
+            description=STATUS_DESCRIPTION,
+            formatter_class=argparse.RawDescriptionHelpFormatter,
+        )
+        status_parser.add_argument(
+            "--partition-out-dir",
+            type=Path,
+            required=True,
+            help="Root directory where per-partition Chroma persistence data is written.",
+        )
+        status_parser.add_argument(
+            "--partition-dir",
+            type=Path,
+            help=(
+                "Directory containing partition subdirectories with "
+                "vectorize_config.json files. "
+                "Used to detect which models are configured but not yet started."
+            ),
+        )
+        status_parser.add_argument(
+            "--partition-config-name",
+            default="vectorize_config.json",
+            help=(
+                "File name of the vectorize configuration within each partition directory "
+                "(defaults to vectorize_config.json)."
+            ),
+        )
+        status_parser.set_defaults(func=self.handle_status)
 
     def run(self, argv: Sequence[str]) -> int:
         args = self.parser.parse_args(argv)
@@ -1985,6 +2035,269 @@ class VectorizeCLI:
         output_path.write_text(json.dumps(stub, indent=2), encoding="utf-8")
         logging.info("Wrote stub configuration to %s", output_path)
         return 0
+
+    def handle_status(self, args: argparse.Namespace) -> int:
+        """Display current indexing progress by analyzing resume states and errors."""
+        partition_out_dir: Path = args.partition_out_dir
+        partition_dir: Optional[Path] = args.partition_dir
+        partition_config_name: str = args.partition_config_name
+
+        if not partition_out_dir.exists():
+            logging.error(
+                "Partition output directory %s does not exist", partition_out_dir
+            )
+            return 1
+
+        # Find all partition directories in output
+        partition_dirs = sorted(
+            [d for d in partition_out_dir.iterdir() if d.is_dir()], key=lambda p: p.name
+        )
+
+        if not partition_dirs:
+            print(f"No partitions found in {partition_out_dir}")
+            return 0
+
+        print(f"\n{'='*80}")
+        print("Indexing Status Report")
+        print(f"{'='*80}")
+        print(f"Partition Directory: {partition_out_dir}")
+        if partition_dir:
+            print(f"Config Directory: {partition_dir}")
+        print(f"Total Partitions: {len(partition_dirs)}")
+        print(f"{'='*80}\n")
+
+        # Collect status for each partition
+        partition_statuses = []
+        for partition_out in partition_dirs:
+            partition_name = partition_out.name
+
+            # Try to find corresponding config directory
+            config_path: Optional[Path] = None
+            if partition_dir and partition_dir.exists():
+                potential_config_dir = partition_dir / partition_name
+                if potential_config_dir.exists():
+                    config_file = potential_config_dir / partition_config_name
+                    if config_file.exists():
+                        config_path = config_file
+
+            status_info = self._analyze_partition_status(
+                partition_out, partition_name, config_path
+            )
+            partition_statuses.append(status_info)
+
+        # Display summary
+        finished_count = sum(1 for s in partition_statuses if s["status"] == "finished")
+        started_count = sum(1 for s in partition_statuses if s["status"] == "started")
+        errored_count = sum(1 for s in partition_statuses if s["status"] == "errored")
+        not_started_count = sum(
+            1 for s in partition_statuses if s["status"] == "not_started"
+        )
+
+        print("Summary:")
+        print(f"  Finished:    {finished_count:>4} partition(s)")
+        print(f"  Started:     {started_count:>4} partition(s)")
+        print(f"  Errored:     {errored_count:>4} partition(s)")
+        print(f"  Not Started: {not_started_count:>4} partition(s)")
+        print(f"\n{'='*80}\n")
+
+        # Display detailed status for each partition
+        for status_info in partition_statuses:
+            self._display_partition_status(status_info)
+
+        return 0
+
+    def _analyze_partition_status(
+        self,
+        partition_dir: Path,
+        partition_name: str,
+        config_path: Optional[Path] = None,
+    ) -> Dict[str, Any]:
+        """Analyze a single partition's status."""
+        status_info: Dict[str, Any] = {
+            "partition_name": partition_name,
+            "partition_dir": partition_dir,
+            "status": "not_started",
+            "models": {},
+            "configured_models": set(),
+            "errors": [],
+            "total_indexed": 0,
+        }
+
+        # Load configured models from vectorize_config.json if available
+        if config_path and config_path.exists():
+            try:
+                config_data = json.loads(config_path.read_text(encoding="utf-8"))
+                if isinstance(config_data, dict):
+                    for model_name, model_config in config_data.items():
+                        if isinstance(model_config, dict) and model_config.get("path"):
+                            status_info["configured_models"].add(model_name)
+            except (OSError, json.JSONDecodeError) as exc:
+                logging.warning("Failed to read config from %s: %s", config_path, exc)
+
+        # Find resume state files
+        resume_files = list(partition_dir.glob("*_resume_state.json"))
+
+        if resume_files:
+            # Load resume state
+            for resume_file in resume_files:
+                try:
+                    resume_data = json.loads(resume_file.read_text(encoding="utf-8"))
+                    if isinstance(resume_data, dict):
+                        for model_name, model_state in resume_data.items():
+                            if isinstance(model_state, dict):
+                                status_info["models"][model_name] = {
+                                    "complete": model_state.get("complete", False),
+                                    "documents_indexed": model_state.get(
+                                        "documents_indexed", 0
+                                    ),
+                                    "indexed_at": model_state.get("indexed_at", ""),
+                                    "row_index": model_state.get("row_index", 0),
+                                    "started": model_state.get("started", False),
+                                }
+                                status_info["total_indexed"] += model_state.get(
+                                    "documents_indexed", 0
+                                )
+                except (OSError, json.JSONDecodeError) as exc:
+                    logging.warning(
+                        "Failed to read resume state from %s: %s", resume_file, exc
+                    )
+
+        # Check for errors
+        errors_dir = partition_dir / "errors"
+        if errors_dir.exists() and errors_dir.is_dir():
+            error_files = sorted(errors_dir.glob("*.yaml"), reverse=True)
+            for error_file in error_files[:5]:  # Show up to 5 most recent errors
+                try:
+                    import yaml
+
+                    error_data = yaml.safe_load(error_file.read_text(encoding="utf-8"))
+                    if isinstance(error_data, dict):
+                        status_info["errors"].append(
+                            {
+                                "timestamp": error_data.get("timestamp", ""),
+                                "model": error_data.get("model", ""),
+                                "exception_type": error_data.get("exception", {}).get(
+                                    "type", ""
+                                ),
+                                "exception_message": error_data.get(
+                                    "exception", {}
+                                ).get("message", "")[:100],
+                                "file": error_file.name,
+                            }
+                        )
+                except Exception as exc:
+                    logging.warning("Failed to read error file %s: %s", error_file, exc)
+
+        # Determine overall status
+        if status_info["errors"]:
+            status_info["status"] = "errored"
+        elif status_info["models"]:
+            # Check if we have config info to compare
+            if status_info["configured_models"]:
+                # Check if all configured models are complete
+                all_complete = all(
+                    status_info["models"].get(model, {}).get("complete", False)
+                    for model in status_info["configured_models"]
+                )
+                # Check if any configured model has started
+                any_started = any(
+                    model in status_info["models"]
+                    and status_info["models"][model].get("started", False)
+                    for model in status_info["configured_models"]
+                )
+
+                if all_complete and len(status_info["models"]) == len(
+                    status_info["configured_models"]
+                ):
+                    status_info["status"] = "finished"
+                elif any_started:
+                    status_info["status"] = "started"
+                else:
+                    status_info["status"] = "not_started"
+            else:
+                # Fallback to old logic if no config available
+                all_complete = all(
+                    model.get("complete", False)
+                    for model in status_info["models"].values()
+                )
+                if all_complete:
+                    status_info["status"] = "finished"
+                else:
+                    status_info["status"] = "started"
+        else:
+            status_info["status"] = "not_started"
+
+        return status_info
+
+    def _display_partition_status(self, status_info: Dict[str, Any]) -> None:
+        """Display status information for a single partition."""
+        partition_name = status_info["partition_name"]
+        status = status_info["status"]
+
+        # Status indicator
+        status_emoji = {
+            "finished": "✓",
+            "started": "→",
+            "errored": "✗",
+            "not_started": "○",
+        }
+
+        status_color = {
+            "finished": "FINISHED",
+            "started": "STARTED",
+            "errored": "ERRORED",
+            "not_started": "NOT STARTED",
+        }
+
+        indicator = status_emoji.get(status, "?")
+        status_text = status_color.get(status, status.upper())
+
+        print(f"[{indicator}] {partition_name:<25} {status_text}")
+
+        # Show configured models count if available
+        configured_models = status_info.get("configured_models", set())
+        if configured_models:
+            models_indexed = len(status_info["models"])
+            models_configured = len(configured_models)
+            print(f"    Models: {models_indexed}/{models_configured} started")
+        elif status_info["models"]:
+            print(f"    Models: {len(status_info['models'])}")
+
+        if status_info["total_indexed"] > 0:
+            print(
+                f"    Total Documents Indexed: {format_int(status_info['total_indexed'])}"
+            )
+
+        # Show model details if available
+        if status_info["models"]:
+            for model_name, model_state in sorted(status_info["models"].items()):
+                complete_marker = "✓" if model_state.get("complete") else "→"
+                docs = model_state.get("documents_indexed", 0)
+                indexed_at = model_state.get("indexed_at", "")
+                print(
+                    f"      [{complete_marker}] {model_name}: {format_int(docs)} docs"
+                )
+                if indexed_at:
+                    print(f"          Last indexed: {indexed_at}")
+
+        # Show configured but not started models
+        if configured_models:
+            not_started_models = configured_models - set(status_info["models"].keys())
+            if not_started_models:
+                print(f"    Not Started: {len(not_started_models)} model(s)")
+                for model_name in sorted(not_started_models):
+                    print(f"      [○] {model_name}: not started")
+
+        # Show errors if present
+        if status_info["errors"]:
+            print(f"    Errors: {len(status_info['errors'])} error report(s)")
+            for error in status_info["errors"][:3]:  # Show up to 3 most recent
+                print(f"      • {error['timestamp']} - {error['model']}")
+                print(
+                    f"        {error['exception_type']}: {error['exception_message']}"
+                )
+
+        print()
 
 
 def main(argv: Optional[Sequence[str]] = None) -> int:
