@@ -1,6 +1,11 @@
 ## SAP KB Indexing Lifecycle
 
-Picture the journey of “ECC Ops Helper,” an SAP support chatbot that evolves alongside your organization.
+Picture the journey of "ECC Ops Helper," an SAP support chatbot that evolves alongside your organization.
+
+**📚 Documentation Overview:**
+- **[ERROR_HANDLING.md](ERROR_HANDLING.md)** - Comprehensive guide to error handling, API failures, recovery strategies, and troubleshooting
+- This document (DOC.md) - Full lifecycle documentation and usage guide
+- **[README.md](README.md)** - Quick start guide
 
 All CLI commands now require an explicit model registry reference so the tooling knows which Pydantic models to load. For the built-in ECC registry, set:
 
@@ -342,6 +347,8 @@ This distinction helps separate documents with rich textual descriptions from th
 ### Logging Configuration for Large-Scale Indexing
 
 When indexing millions of records, log output can grow significantly. The indexer supports file logging with automatic rotation to prevent disk space issues and manage log files efficiently.
+
+**💡 See also:** [ERROR_HANDLING.md](ERROR_HANDLING.md) for comprehensive information about API failures, error reports, and recovery strategies.
 
 #### Enabling File Logging with Rotation
 
