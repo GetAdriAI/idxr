@@ -227,3 +227,112 @@ That means you can target an entire model, specific partitions, or only certain 
 - **Product sunset:** Retire an entire knowledge domain when a service is decommissioned.
 
 The drop flow completes the lifecycle: every addition, migration, and deletion now runs through the same config-driven, reviewable pipeline.
+
+---
+
+### Document Semantic Content and Metadata
+
+Every document indexed in the vector store contains metadata that describes its content structure. Understanding what gets indexed and how it's marked is crucial for querying and filtering.
+
+#### What Gets Indexed
+
+The `build_semantic_text()` function determines the actual text content that gets embedded. The behavior depends on the model's semantic fields:
+
+**1. When semantic fields have values:**
+
+The text to be indexed consists of all non-empty semantic field values joined with newlines.
+
+```python
+# Example: ProductModel with semantic_fields=("title", "description")
+{
+    "product_id": "P123",
+    "title": "Laptop Computer",
+    "description": "High-performance laptop for professionals",
+    "category": "Electronics",
+    "price": 1299.99
+}
+
+# Indexed text:
+"""
+Laptop Computer
+High-performance laptop for professionals
+"""
+```
+
+**2. When semantic field values are None or empty:**
+
+The entire model is serialized as JSON and that becomes the indexed text.
+
+```python
+# Example: PersonWithSemantics with description=None
+{
+    "name": "John Doe",
+    "description": None,  # semantic field is None
+    "age": 30,
+    "email": "john@example.com"
+}
+
+# Indexed text:
+"""
+{"age": 30, "description": null, "email": "john@example.com", "name": "John Doe"}
+"""
+```
+
+**3. When there are no semantic fields defined:**
+
+The entire model is serialized as JSON and that becomes the indexed text.
+
+```python
+# Example: PersonNoSemantics with semantic_fields=()
+{
+    "name": "Bob Smith",
+    "age": 40,
+    "email": "bob@example.com"
+}
+
+# Indexed text:
+"""
+{"age": 40, "email": "bob@example.com", "name": "Bob Smith"}
+"""
+```
+
+#### The `has_sem` Metadata Field
+
+Every document's metadata includes a `has_sem` field (short for "has semantic value") that indicates whether the document contains meaningful semantic content:
+
+- **`has_sem: True`** - The document has one or more non-empty semantic fields with meaningful content (not just whitespace)
+- **`has_sem: False`** - The document either:
+  - Has no semantic fields defined in the model
+  - Has semantic fields that are all None, empty, or whitespace-only
+  - Falls back to JSON serialization
+
+#### Empty Value Filtering
+
+The indexer filters out the following values from semantic fields:
+- `None`
+- Empty strings `""`
+- Empty lists `[]`
+- Empty dicts `{}`
+- Strings containing only whitespace (marked as `has_sem: False`)
+
+#### Querying by Semantic Content
+
+Use the `has_sem` metadata field to filter your queries:
+
+```python
+# Find only documents with genuine semantic content
+collection.query(
+    query_texts=["SAP table structures"],
+    where={"has_sem": True},
+    n_results=10
+)
+
+# Find documents that use JSON fallback (no semantic fields)
+collection.query(
+    query_texts=["configuration data"],
+    where={"has_sem": False},
+    n_results=10
+)
+```
+
+This distinction helps separate documents with rich textual descriptions from those that are purely structured data, allowing you to tune retrieval strategies based on content type.

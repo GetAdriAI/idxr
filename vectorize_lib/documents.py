@@ -54,16 +54,30 @@ def build_document_id(model_name: str, instance: BaseModel) -> str:
     return f"{model_name}:{digest}"
 
 
-def build_semantic_text(instance: BaseModel, spec: ModelSpec) -> str:
-    """Create the textual content used for semantic embedding."""
+def build_semantic_text(instance: BaseModel, spec: ModelSpec) -> Tuple[str, bool]:
+    """Create the textual content used for semantic embedding.
+
+    Returns:
+        A tuple of (document_text, has_semantic_value) where:
+        - document_text: The text to be indexed
+        - has_semantic_value: True if the document has meaningful semantic content
+    """
     values: List[str] = []
     for field in spec.semantic_fields:
         value = getattr(instance, field, None)
         if value not in (None, "", [], {}):
             values.append(str(value))
+
     if values:
-        return "\n".join(values)
-    return json.dumps(model_to_dict(instance), sort_keys=True, default=str)
+        joined_text = "\n".join(values)
+        # Check if the joined text is just whitespace
+        has_semantic = bool(joined_text.strip())
+        return joined_text, has_semantic
+
+    # No semantic fields or all were empty - serialize entire model as fallback
+    fallback_text = json.dumps(model_to_dict(instance), sort_keys=True, default=str)
+    # Models with no semantic fields are marked as having no semantic value
+    return fallback_text, False
 
 
 def build_metadata(
@@ -208,7 +222,7 @@ def iter_documents(
                 )
                 continue
             doc_id = build_document_id(model_name, instance)
-            document_text = build_semantic_text(instance, spec)
+            document_text, has_semantic_value = build_semantic_text(instance, spec)
             metadata = build_metadata(
                 instance,
                 spec,
@@ -217,4 +231,6 @@ def iter_documents(
                 extra_metadata=extra_metadata,
                 schema_version=schema_version,
             )
+            # Add has_sem metadata to track documents with semantic value
+            metadata["has_sem"] = has_semantic_value
             yield row_index, doc_id, document_text, metadata
