@@ -773,15 +773,20 @@ def index_from_config(
             token_count = count_tokens(text, encoder)
             current_batch_size = effective_batch_size
 
+            # Get the per-document token limit for the embedding model
+            # OpenAI embedding models have limits like 8191 tokens
+            # This is different from MAX_TOKENS_PER_REQUEST which is for batching
+            embedding_token_limit = min(token_limit, MAX_TOKENS_PER_REQUEST)
+
             # Handle oversized documents with intelligent truncation
-            if token_count > MAX_TOKENS_PER_REQUEST:
+            if token_count > embedding_token_limit:
                 logging.warning(
-                    "Document %s in %s has %s tokens (exceeds API limit %s). "
+                    "Document %s in %s has %s tokens (exceeds limit %s). "
                     "Applying intelligent truncation.",
                     doc_id,
                     model_key,
                     format_int(token_count),
-                    format_int(MAX_TOKENS_PER_REQUEST),
+                    format_int(embedding_token_limit),
                 )
 
                 # Determine truncation strategy with precedence:
@@ -799,7 +804,7 @@ def index_from_config(
                     )
 
                 # Truncate intelligently, leaving some headroom for safety
-                target_tokens = int(MAX_TOKENS_PER_REQUEST * 0.95)  # 5% safety margin
+                target_tokens = int(embedding_token_limit * 0.95)  # 5% safety margin
                 truncated_text, final_tokens, was_truncated = (
                     truncate_text_intelligently(
                         text,

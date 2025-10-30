@@ -373,6 +373,16 @@ class VectorizeCLI:
             ),
         )
         index_parser.add_argument(
+            "--token-limit",
+            type=int,
+            default=TOKEN_SAFETY_LIMIT,
+            help=(
+                f"Maximum tokens per document for the embedding model. "
+                f"Documents exceeding this limit will be truncated. "
+                f"Default: {TOKEN_SAFETY_LIMIT} (suitable for OpenAI embedding models)."
+            ),
+        )
+        index_parser.add_argument(
             "--e2e-test-run",
             action="store_true",
             help=(
@@ -887,6 +897,7 @@ class VectorizeCLI:
         cloud_ssl: bool,
         model_registry: Mapping[str, ModelSpec],
         truncation_strategy: str = "auto",
+        token_limit: int = TOKEN_SAFETY_LIMIT,
         extra_metadata: Optional[Mapping[str, Any]] = None,
         model_metadata: Optional[Mapping[str, Mapping[str, Any]]] = None,
         e2e_config: Optional[E2ETestConfig] = None,
@@ -907,7 +918,7 @@ class VectorizeCLI:
             format_int(batch_size),
             embedding_model,
             "yes" if resume else "no",
-            format_int(TOKEN_SAFETY_LIMIT),
+            format_int(token_limit),
         )
         logging.info(
             "Loaded configuration for %d models (%d with CSV paths)",
@@ -973,6 +984,7 @@ class VectorizeCLI:
             model_registry=model_registry,
             resume=resume,
             encoder=encoder,
+            token_limit=token_limit,
             completion_state=completion_state,
             completion_state_path=resume_state_path,
             extra_metadata=extra_metadata,
@@ -1169,6 +1181,7 @@ class VectorizeCLI:
             cloud_ssl=cloud_ssl,
             model_registry=args.model_registry,
             truncation_strategy=args.truncation_strategy,
+            token_limit=args.token_limit,
             extra_metadata=None,
             model_metadata=None,
             e2e_config=e2e_config,
@@ -1474,6 +1487,7 @@ class VectorizeCLI:
                 cloud_ssl=cloud_ssl,
                 model_registry=args.model_registry,
                 truncation_strategy=args.truncation_strategy,
+                token_limit=args.token_limit,
                 extra_metadata={"partition_name": partition_name},
                 model_metadata=partition_model_metadata.get(partition_name),
                 e2e_config=e2e_config,
