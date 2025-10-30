@@ -28,6 +28,7 @@ from .indexing import (
     create_embedding_function,
     index_from_config,
 )
+from .logging_config import setup_logging
 from .partitions import PARTITION_MANIFEST_VERSION, load_partition_manifest_entries
 from indexer.models import ModelSpec
 from indexer.load_model_registry import load_model_registry
@@ -155,6 +156,37 @@ class VectorizeCLI:
             default="INFO",
             help="Logging verbosity (DEBUG, INFO, WARNING, ERROR). Defaults to INFO.",
         )
+        common.add_argument(
+            "--log-file",
+            type=Path,
+            help=(
+                "Path to log file. Enables file logging with automatic rotation. "
+                "If not specified, logs only to console."
+            ),
+        )
+        common.add_argument(
+            "--log-max-bytes",
+            type=int,
+            default=100 * 1024 * 1024,  # 100 MB
+            help=(
+                "Maximum size of a single log file before rotation in bytes. "
+                "Default: 104857600 (100 MB)."
+            ),
+        )
+        common.add_argument(
+            "--log-backup-count",
+            type=int,
+            default=10,
+            help=(
+                "Number of rotated log files to keep. "
+                "Default: 10 (for 1GB total with 100MB files)."
+            ),
+        )
+        common.add_argument(
+            "--log-no-console",
+            action="store_true",
+            help="Disable console logging (only log to file if --log-file is specified).",
+        )
 
         subparsers = self.parser.add_subparsers(dest="command", required=True)
 
@@ -220,6 +252,46 @@ class VectorizeCLI:
                     --collection ecc-std \\
                     --e2e-test-run --e2e-sample-size 25 \\
                     --e2e-output build/vector/e2e_cloud_samples.json
+
+                Logging Examples
+                ----------------
+                # Enable file logging with default rotation (100MB files, 10 backups)
+                vectorize.py index \\
+                    --model kb.std.ecc_6_0_ehp_7.registry:MODEL_REGISTRY \\
+                    --partition-manifest build/partitions/manifest.json \\
+                    --partition-out-dir build/vector \\
+                    --collection ecc-std \\
+                    --log-file logs/vectorize.log
+
+                # Production: large files, no console output (for background jobs)
+                vectorize.py index \\
+                    --model kb.std.ecc_6_0_ehp_7.registry:MODEL_REGISTRY \\
+                    --partition-manifest build/partitions/manifest.json \\
+                    --partition-out-dir build/vector \\
+                    --collection ecc-std \\
+                    --log-file /var/log/vectorize/production.log \\
+                    --log-max-bytes 524288000 \\
+                    --log-backup-count 20 \\
+                    --log-no-console
+
+                # Debug mode with verbose console output only
+                vectorize.py index \\
+                    --model kb.std.ecc_6_0_ehp_7.registry:MODEL_REGISTRY \\
+                    --config data/config.json \\
+                    --collection ecc-std \\
+                    --persist-dir ./chroma \\
+                    --log-level DEBUG
+
+                # Both console and file logging with custom rotation
+                vectorize.py index \\
+                    --model kb.std.ecc_6_0_ehp_7.registry:MODEL_REGISTRY \\
+                    --partition-manifest build/partitions/manifest.json \\
+                    --partition-out-dir build/vector \\
+                    --collection ecc-std \\
+                    --log-file logs/index_$(date +%%Y%%m%%d_%%H%%M%%S).log \\
+                    --log-max-bytes 209715200 \\
+                    --log-backup-count 5 \\
+                    --log-level INFO
                 """
             ),
         )
@@ -565,10 +637,16 @@ class VectorizeCLI:
 
     def run(self, argv: Sequence[str]) -> int:
         args = self.parser.parse_args(argv)
-        logging.basicConfig(
-            level=getattr(logging, str(args.log_level).upper(), logging.INFO),
-            format="%(levelname)s %(message)s",
+
+        # Setup logging with rotation support
+        setup_logging(
+            log_level=str(args.log_level),
+            log_file=getattr(args, "log_file", None),
+            max_bytes=getattr(args, "log_max_bytes", 100 * 1024 * 1024),
+            backup_count=getattr(args, "log_backup_count", 10),
+            console_output=not getattr(args, "log_no_console", False),
         )
+
         try:
             args.model_registry = load_model_registry(str(args.model))
         except (TypeError, ValueError) as exc:

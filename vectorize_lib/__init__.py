@@ -2,6 +2,7 @@
 
 from .configuration import ModelConfig, generate_stub_config, load_config
 from .cli import main, VectorizeCLI
+from .logging_config import setup_logging
 from .utils import format_int
 
 __all__ = [
@@ -11,4 +12,5 @@ __all__ = [
     "VectorizeCLI",
     "format_int",
     "main",
+    "setup_logging",
 ]

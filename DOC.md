@@ -336,3 +336,376 @@ collection.query(
 ```
 
 This distinction helps separate documents with rich textual descriptions from those that are purely structured data, allowing you to tune retrieval strategies based on content type.
+
+---
+
+### Logging Configuration for Large-Scale Indexing
+
+When indexing millions of records, log output can grow significantly. The indexer supports file logging with automatic rotation to prevent disk space issues and manage log files efficiently.
+
+#### Enabling File Logging with Rotation
+
+Use the following CLI arguments to enable file logging:
+
+```bash
+vectorize.py index \
+  --model "$MODEL_REGISTRY_TARGET" \
+  --partition-manifest build/partitions/manifest.json \
+  --partition-out-dir build/vector \
+  --collection ecc-std \
+  --log-file logs/vectorize.log \
+  --log-max-bytes 104857600 \
+  --log-backup-count 10
+```
+
+#### Logging Arguments
+
+- **`--log-file <path>`**: Path to the log file. If not specified, logs only go to console. The directory is created automatically if it doesn't exist.
+
+- **`--log-level <level>`**: Logging verbosity level. Options: `DEBUG`, `INFO`, `WARNING`, `ERROR`, `CRITICAL`. Default: `INFO`.
+
+- **`--log-max-bytes <bytes>`**: Maximum size of a single log file before rotation in bytes. Default: `104857600` (100 MB). When the log file reaches this size, it's rotated automatically.
+
+- **`--log-backup-count <count>`**: Number of rotated log files to keep. Default: `10`. With default settings (100 MB per file, 10 backups), you'll use about 1 GB of disk space for logs.
+
+- **`--log-no-console`**: Disable console output (only log to file). Useful for background processes or when you only want file logs.
+
+#### Log Rotation Behavior
+
+When a log file reaches `--log-max-bytes`:
+1. The current log file is renamed with a `.1` suffix (e.g., `vectorize.log` → `vectorize.log.1`)
+2. Previous backup files are incremented (`.1` → `.2`, `.2` → `.3`, etc.)
+3. The oldest backup (`.10` with default settings) is deleted
+4. A new `vectorize.log` file is created
+
+This ensures your disk space usage is bounded while preserving recent logs for debugging.
+
+#### Common Logging Configurations
+
+**1. Development (verbose logging to console):**
+```bash
+vectorize.py index \
+  --model "$MODEL_REGISTRY_TARGET" \
+  --config data/config.json \
+  --collection ecc-std \
+  --persist-dir ./chroma \
+  --log-level DEBUG
+```
+Use this during development to see detailed logs in your terminal without creating files.
+
+**2. Default file logging (recommended for most users):**
+```bash
+vectorize.py index \
+  --model "$MODEL_REGISTRY_TARGET" \
+  --partition-manifest build/partitions/manifest.json \
+  --partition-out-dir build/vector \
+  --collection ecc-std \
+  --log-file logs/vectorize.log
+```
+This uses sensible defaults: 100 MB files, 10 backups (1 GB total). Logs appear both in console and file.
+
+**3. Production (file logging only, larger files):**
+```bash
+vectorize.py index \
+  --model "$MODEL_REGISTRY_TARGET" \
+  --partition-manifest build/partitions/manifest.json \
+  --partition-out-dir build/vector \
+  --collection ecc-std \
+  --log-file /var/log/vectorize/indexing.log \
+  --log-max-bytes 524288000 \
+  --log-backup-count 20 \
+  --log-no-console
+```
+This configuration uses 500 MB files with 20 backups (10 GB total), with no console output for clean background execution.
+
+**4. Background processing with timestamped logs:**
+```bash
+nohup vectorize.py index \
+  --model "$MODEL_REGISTRY_TARGET" \
+  --partition-manifest build/partitions/manifest.json \
+  --partition-out-dir build/vector \
+  --collection ecc-std \
+  --log-file logs/vectorize_$(date +%Y%m%d_%H%M%S).log \
+  --log-no-console \
+  > /dev/null 2>&1 &
+```
+Creates a new log file with timestamp for each run, useful for keeping separate logs per indexing session.
+
+**5. Parallel partitions with file logging:**
+```bash
+vectorize.py index \
+  --model "$MODEL_REGISTRY_TARGET" \
+  --partition-manifest build/partitions/manifest.json \
+  --partition-out-dir build/vector \
+  --collection ecc-std \
+  --parallel-partitions 4 \
+  --log-file logs/parallel_index.log \
+  --log-max-bytes 209715200 \
+  --log-backup-count 15
+```
+When processing partitions in parallel, larger log files (200 MB) with more backups (15) handle the increased log volume.
+
+**6. Chroma Cloud with file logging:**
+```bash
+vectorize.py index \
+  --model "$MODEL_REGISTRY_TARGET" \
+  --partition-manifest build/partitions/manifest.json \
+  --partition-out-dir build/vector \
+  --client-type cloud \
+  --chroma-api-token "$CHROMA_TOKEN" \
+  --collection ecc-std \
+  --log-file logs/cloud_index.log \
+  --log-level INFO
+```
+Logs network operations and API calls to file while indexing to Chroma Cloud.
+
+**7. Resume mode with existing logs:**
+```bash
+vectorize.py index \
+  --model "$MODEL_REGISTRY_TARGET" \
+  --partition-manifest build/partitions/manifest.json \
+  --partition-out-dir build/vector \
+  --collection ecc-std \
+  --resume \
+  --log-file logs/vectorize.log \
+  --log-level INFO
+```
+When resuming, logs append to existing file until it rotates. Rotation preserves previous run's logs in backup files.
+
+#### Programmatic Usage
+
+You can also configure logging programmatically:
+
+```python
+from indexer.vectorize_lib import setup_logging
+from pathlib import Path
+
+# Enable file logging with rotation
+setup_logging(
+    log_level="INFO",
+    log_file=Path("logs/vectorize.log"),
+    max_bytes=100 * 1024 * 1024,  # 100 MB
+    backup_count=10,
+    console_output=True,
+)
+```
+
+#### Log File Location Best Practices
+
+- **Development**: Use relative paths like `logs/vectorize.log` in your project directory
+- **Production**: Use absolute paths in a dedicated log directory like `/var/log/vectorize/`
+- **Date-stamped logs**: Include timestamps in filenames for long-running processes: `logs/vectorize_$(date +%Y%m%d_%H%M%S).log`
+- **Ensure write permissions**: The process must have write access to the log directory
+
+#### Monitoring Disk Usage
+
+With default settings (100 MB × 10 backups), expect ~1 GB of log storage. Monitor your log directory:
+
+```bash
+# Check total log size
+du -sh logs/
+
+# List log files by size
+ls -lh logs/vectorize.log*
+
+# Watch logs in real-time
+tail -f logs/vectorize.log
+```
+
+#### Real-World Scenarios
+
+**Scenario 1: Indexing 16 Million Records**
+
+For very large datasets, use aggressive rotation to prevent any single file from becoming unwieldy:
+
+```bash
+vectorize.py index \
+  --model "$MODEL_REGISTRY_TARGET" \
+  --partition-manifest build/partitions/manifest.json \
+  --partition-out-dir build/vector \
+  --collection ecc-std \
+  --log-file /var/log/vectorize/large_index.log \
+  --log-max-bytes 52428800 \
+  --log-backup-count 50 \
+  --log-level INFO \
+  --log-no-console
+```
+This uses 50 MB files with 50 backups (2.5 GB total). Smaller files are easier to transfer, archive, or analyze.
+
+**Scenario 2: Debugging Failed Indexing Runs**
+
+When troubleshooting issues, capture everything with DEBUG level:
+
+```bash
+vectorize.py index \
+  --model "$MODEL_REGISTRY_TARGET" \
+  --partition-manifest build/partitions/manifest.json \
+  --partition-out-dir build/vector \
+  --collection ecc-std \
+  --log-file logs/debug_$(date +%Y%m%d_%H%M%S).log \
+  --log-level DEBUG \
+  --log-max-bytes 104857600 \
+  --log-backup-count 5
+```
+Debug logs are verbose, so keep fewer backups and use timestamps to separate runs.
+
+**Scenario 3: CI/CD Pipeline Integration**
+
+For automated pipelines, capture logs per build:
+
+```bash
+#!/bin/bash
+BUILD_ID="${CI_BUILD_ID:-$(date +%Y%m%d_%H%M%S)}"
+LOG_DIR="logs/builds/$BUILD_ID"
+mkdir -p "$LOG_DIR"
+
+vectorize.py index \
+  --model "$MODEL_REGISTRY_TARGET" \
+  --partition-manifest build/partitions/manifest.json \
+  --partition-out-dir build/vector \
+  --collection "ecc-std-$BUILD_ID" \
+  --log-file "$LOG_DIR/vectorize.log" \
+  --log-max-bytes 104857600 \
+  --log-backup-count 3 \
+  --log-no-console
+
+# Archive logs on completion
+tar -czf "logs/archives/build_${BUILD_ID}_logs.tar.gz" "$LOG_DIR"
+```
+
+**Scenario 4: Multi-Stage Indexing with Different Log Levels**
+
+Different stages may need different verbosity:
+
+```bash
+# Stage 1: Initial validation (verbose)
+vectorize.py index \
+  --model "$MODEL_REGISTRY_TARGET" \
+  --config data/config.json \
+  --collection ecc-std \
+  --persist-dir ./chroma \
+  --e2e-test-run \
+  --e2e-sample-size 100 \
+  --log-file logs/stage1_validation.log \
+  --log-level DEBUG
+
+# Stage 2: Full indexing (normal verbosity)
+vectorize.py index \
+  --model "$MODEL_REGISTRY_TARGET" \
+  --partition-manifest build/partitions/manifest.json \
+  --partition-out-dir build/vector \
+  --collection ecc-std \
+  --log-file logs/stage2_full_index.log \
+  --log-level INFO \
+  --log-max-bytes 209715200 \
+  --log-backup-count 10
+```
+
+**Scenario 5: Monitoring Long-Running Jobs**
+
+When indexing takes hours, monitor progress:
+
+```bash
+# Start indexing in background
+vectorize.py index \
+  --model "$MODEL_REGISTRY_TARGET" \
+  --partition-manifest build/partitions/manifest.json \
+  --partition-out-dir build/vector \
+  --collection ecc-std \
+  --log-file logs/long_running.log \
+  --log-no-console \
+  > /dev/null 2>&1 &
+
+# Save PID for later
+echo $! > logs/indexing.pid
+
+# Monitor progress in another terminal
+tail -f logs/long_running.log | grep -E "(INFO|WARNING|ERROR)"
+
+# Or watch specific metrics
+watch -n 30 'tail -100 logs/long_running.log | grep "Indexed"'
+```
+
+#### Troubleshooting Log Issues
+
+**Problem: Logs not appearing**
+
+Check:
+1. Directory permissions: `ls -ld logs/`
+2. Disk space: `df -h`
+3. Process is running: `ps aux | grep vectorize`
+
+**Problem: Log files growing too fast**
+
+Reduce log level or increase rotation:
+```bash
+# Less verbose
+--log-level WARNING  # Only warnings and errors
+
+# More aggressive rotation
+--log-max-bytes 10485760  # 10 MB files
+--log-backup-count 50     # More files, but smaller
+```
+
+**Problem: Need to grep across rotated logs**
+
+```bash
+# Search all current and rotated logs
+grep "ERROR" logs/vectorize.log*
+
+# Search with context
+grep -C 5 "ValidationError" logs/vectorize.log*
+
+# Count errors across all logs
+grep -c "ERROR" logs/vectorize.log* | awk -F: '{sum+=$2} END {print sum}'
+```
+
+**Problem: Logs taking too much disk space**
+
+Compress old rotated logs:
+```bash
+# Compress all backup logs
+find logs/ -name "*.log.[0-9]*" -exec gzip {} \;
+
+# Or use logrotate for automatic compression
+cat > /etc/logrotate.d/vectorize <<EOF
+/var/log/vectorize/*.log {
+    size 100M
+    rotate 10
+    compress
+    delaycompress
+    missingok
+    notifempty
+}
+EOF
+```
+
+#### Log Analysis Tips
+
+**Extract performance metrics:**
+```bash
+# Find indexing rate
+grep "Indexed" logs/vectorize.log | tail -20
+
+# Calculate average time per partition
+grep "partition.*completed" logs/vectorize.log | \
+  awk '{print $NF}' | \
+  awk '{sum+=$1; count++} END {print sum/count}'
+```
+
+**Identify bottlenecks:**
+```bash
+# Find slowest operations
+grep "took" logs/vectorize.log | sort -k NF -n | tail -20
+
+# Check for retries or failures
+grep -E "(retry|failed|error)" logs/vectorize.log -i
+```
+
+**Monitor memory usage trends:**
+```bash
+# If you log memory stats
+grep "memory" logs/vectorize.log | \
+  awk '{print $timestamp, $memory_mb}' | \
+  gnuplot -e "set terminal dumb; plot '-' using 1:2 with lines"
+```
