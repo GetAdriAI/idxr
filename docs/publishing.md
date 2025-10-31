@@ -13,7 +13,8 @@ Material is optional—the default theme works out of the box—but it provides 
 ## 2. Preview locally
 
 ```bash
-mkdocs serve --config-file indexer/mkdocs.yml
+cd indexer
+mkdocs serve
 ```
 
 Navigate to <http://127.0.0.1:8000/> to browse the site. MkDocs reloads pages whenever you edit Markdown files.
@@ -42,7 +43,7 @@ jobs:
         with:
           python-version: '3.12'
       - run: pip install mkdocs mkdocs-material
-      - run: mkdocs gh-deploy --force --config-file indexer/mkdocs.yml
+      - run: mkdocs gh-deploy --force
 ```
 
 3. Merge to `main`. The workflow pushes the rendered site to the `gh-pages` branch that GitHub Pages serves.
@@ -52,7 +53,7 @@ jobs:
 If you prefer not to use Actions, run:
 
 ```bash
-mkdocs gh-deploy --force --config-file indexer/mkdocs.yml
+mkdocs gh-deploy --force
 ```
 
 This command builds the static site, pushes it to the `gh-pages` branch of the active remote, and prints the Pages URL.
