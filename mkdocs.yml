@@ -38,6 +38,12 @@ nav:
           - --log-level: vectorize/args/log-level.md
           - status --partition-out-dir: vectorize/args/status-partition-out-dir.md
           - status --partition-dir: vectorize/args/status-partition-dir.md
+  - Query:
+      - Purpose & Workflow: query/overview.md
+      - Getting Started: query/getting-started.md
+      - API Reference: query/api-reference.md
+      - Examples: query/examples.md
+      - Config Reference: query/config.md
   - Docs Operations:
       - Publishing to GitHub Pages: publishing.md
 theme:
