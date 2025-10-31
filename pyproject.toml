@@ -59,3 +59,9 @@ packages = [
   "TRUNCATION_EXAMPLES.md",
   "ERROR_HANDLING.md",
 ]
+
+[dependency-groups]
+dev = [
+    "mkdocs (>=1.6.1,<2.0.0)",
+    "mkdocs-material (>=9.6.22,<10.0.0)"
+]

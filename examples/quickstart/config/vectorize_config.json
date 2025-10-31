@@ -1,0 +1,11 @@
+{
+  "Contract": {
+    "path": "data/contracts.csv",
+    "columns": {
+      "id": "contract_id",
+      "title": "title",
+      "summary": "summary"
+    },
+    "truncation_strategy": "sentences"
+  }
+}

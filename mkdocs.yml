@@ -1,0 +1,50 @@
+site_name: idxr Documentation
+site_description: Model-centric, config-driven indexing toolkit for vector databases.
+repo_url: https://github.com/GetAdriAI/idxr
+repo_name: GetAdriAI/idxr
+docs_dir: docs
+nav:
+  - Overview: index.md
+  - Getting Started: getting-started.md
+  - Prepare Datasets:
+      - Purpose & Workflow: prepare-datasets/overview.md
+      - Config Reference: prepare-datasets/config.md
+      - CLI Arguments:
+          - --model: prepare-datasets/args/model.md
+          - --config: prepare-datasets/args/config.md
+          - --output-root: prepare-datasets/args/output-root.md
+          - --directory-size: prepare-datasets/args/directory-size.md
+          - --manifest: prepare-datasets/args/manifest.md
+          - --log-level: prepare-datasets/args/log-level.md
+  - Vectorize:
+      - Purpose & Workflow: vectorize/overview.md
+      - Config Reference: vectorize/config.md
+      - CLI Arguments:
+          - --model: vectorize/args/model.md
+          - --partition-manifest: vectorize/args/partition-manifest.md
+          - --partition-out-dir: vectorize/args/partition-out-dir.md
+          - --partition-dir: vectorize/args/partition-dir.md
+          - --config: vectorize/args/config.md
+          - --client-type: vectorize/args/client-type.md
+          - --chroma-cloud-tenant: vectorize/args/chroma-cloud-tenant.md
+          - --chroma-cloud-database: vectorize/args/chroma-cloud-database.md
+          - --chroma-api-token: vectorize/args/chroma-api-token.md
+          - --collection: vectorize/args/collection.md
+          - --batch-size: vectorize/args/batch-size.md
+          - --resume: vectorize/args/resume.md
+          - --parallel-partitions: vectorize/args/parallel-partitions.md
+          - --truncation-strategy: vectorize/args/truncation-strategy.md
+          - --log-file: vectorize/args/log-file.md
+          - --log-max-bytes: vectorize/args/log-max-bytes.md
+          - --log-level: vectorize/args/log-level.md
+          - status --partition-out-dir: vectorize/args/status-partition-out-dir.md
+          - status --partition-dir: vectorize/args/status-partition-dir.md
+  - Docs Operations:
+      - Publishing to GitHub Pages: publishing.md
+theme:
+  name: mkdocs
+markdown_extensions:
+  - admonition
+  - codehilite
+  - toc:
+      permalink: true

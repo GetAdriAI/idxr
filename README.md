@@ -2,6 +2,8 @@
 
 **idxr** exists for teams who want a dependable, repeatable way to turn any structured dataset into a searchable vector index. Everything revolves around three pillars:
 
+- 📚 **Documentation** – Browse the full MkDocs site at https://getadriai.github.io/idxr/ (or build it locally with `mkdocs serve`).
+
 - **Model-centric** – you describe your world as Pydantic models, and idxr keeps schemas, partitions, and manifests aligned with those models.
 - **Config-driven** – declarative JSON configs capture how each model should be prepared and indexed, so onboarding a new dataset is as easy as committing a config file.
 - **Fail-stop-retry** – every stage records checkpoints, row digests, and error payloads so the pipeline halts loudly when something goes wrong and then resumes from where it stopped.

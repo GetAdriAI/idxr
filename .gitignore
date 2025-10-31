@@ -17,3 +17,5 @@ venv/
 
 # Miscellaneous
 *.log
+
+site/

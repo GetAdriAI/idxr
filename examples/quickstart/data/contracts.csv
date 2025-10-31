@@ -1,0 +1,4 @@
+contract_id,title,summary
+1001,Master Data Blueprint,"Step-by-step guide for configuring master data objects across finance, logistics, and HR."
+1002,Process Integration Playbook,"Explains how to link ECC transactions to BPMN flows with reusable templates."
+1003,Security Baseline,"Checklist covering roles, authorizations, and audit logging for a greenfield rollout."
