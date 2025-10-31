@@ -25,6 +25,7 @@ from .collection_strategies import (
     PartitionCollectionStrategy,
 )
 from .configuration import ModelConfig, generate_stub_config, load_config
+from .query_config import generate_query_config
 
 import argparse
 import json
@@ -797,6 +798,36 @@ class VectorizeCLI:
             ),
         )
         status_parser.set_defaults(func=self.handle_status)
+
+        # Generate query config command
+        query_config_parser = subparsers.add_parser(
+            "generate-query-config",
+            parents=[common],
+            help="Generate query configuration from partition resume states.",
+            description=(
+                "Generate a query_config.json file by scanning resume state files "
+                "in partition output directories. This config maps model names to "
+                "their collections for efficient multi-collection querying."
+            ),
+            formatter_class=argparse.RawDescriptionHelpFormatter,
+        )
+        query_config_parser.add_argument(
+            "--partition-out-dir",
+            type=Path,
+            required=True,
+            help="Root directory containing partition subdirectories with resume state files.",
+        )
+        query_config_parser.add_argument(
+            "--output",
+            type=Path,
+            required=True,
+            help="Path where the query_config.json file will be written.",
+        )
+        query_config_parser.add_argument(
+            "--collection-prefix",
+            help="Optional collection name prefix used during indexing.",
+        )
+        query_config_parser.set_defaults(func=self.handle_generate_query_config)
 
     def run(self, argv: Sequence[str]) -> int:
         args = self.parser.parse_args(argv)
@@ -2319,7 +2350,7 @@ class VectorizeCLI:
             "models": {},
             "configured_models": set(),
             "errors": [],
-            "total_indexed": 0,
+            "total_collection_count": 0,
         }
 
         # Load configured models from vectorize_config.json if available
@@ -2344,22 +2375,28 @@ class VectorizeCLI:
                     if isinstance(resume_data, dict):
                         for model_name, model_state in resume_data.items():
                             if isinstance(model_state, dict):
+                                collection_total = model_state.get(
+                                    "collection_count",
+                                    model_state.get("documents_indexed", 0),
+                                )
                                 status_info["models"][model_name] = {
                                     "complete": model_state.get("complete", False),
                                     "documents_indexed": model_state.get(
                                         "documents_indexed", 0
                                     ),
+                                    "collection_count": collection_total,
                                     "indexed_at": model_state.get("indexed_at", ""),
                                     "row_index": model_state.get("row_index", 0),
                                     "started": model_state.get("started", False),
                                 }
-                                status_info["total_indexed"] += model_state.get(
-                                    "documents_indexed", 0
-                                )
                 except (OSError, json.JSONDecodeError) as exc:
                     logging.warning(
                         "Failed to read resume state from %s: %s", resume_file, exc
                     )
+            status_info["total_collection_count"] = sum(
+                model_details.get("collection_count", 0)
+                for model_details in status_info["models"].values()
+            )
 
         # Check for errors
         errors_dir = partition_dir / "errors"
@@ -2417,6 +2454,20 @@ class VectorizeCLI:
                     logging.warning("Failed to read error file %s: %s", error_file, exc)
 
         # Determine overall status
+        model_names = set(status_info["models"].keys())
+        all_models_complete = bool(status_info["models"]) and all(
+            model_state.get("complete", False)
+            for model_state in status_info["models"].values()
+        )
+        if status_info["configured_models"]:
+            all_models_complete = all_models_complete and status_info[
+                "configured_models"
+            ].issubset(model_names)
+
+        if all_models_complete:
+            status_info["status"] = "finished"
+            return status_info
+
         progressed_past_errors = False
         if status_info["errors"]:
             model_progress_rows: Dict[str, int] = {}
@@ -2438,44 +2489,26 @@ class VectorizeCLI:
                     max(model_progress_rows.values(), default=-1) > max_error_row_any
                 )
 
-        if status_info["errors"]:
             if progressed_past_errors:
                 status_info["status"] = "started"
             else:
                 status_info["status"] = "errored"
-        elif status_info["models"]:
-            # Check if we have config info to compare
-            if status_info["configured_models"]:
-                # Check if all configured models are complete
-                all_complete = all(
-                    status_info["models"].get(model, {}).get("complete", False)
-                    for model in status_info["configured_models"]
-                )
-                # Check if any configured model has started
-                any_started = any(
-                    model in status_info["models"]
-                    and status_info["models"][model].get("started", False)
-                    for model in status_info["configured_models"]
-                )
+            return status_info
 
-                if all_complete and len(status_info["models"]) == len(
-                    status_info["configured_models"]
-                ):
-                    status_info["status"] = "finished"
-                elif any_started:
-                    status_info["status"] = "started"
-                else:
-                    status_info["status"] = "not_started"
-            else:
-                # Fallback to old logic if no config available
-                all_complete = all(
-                    model.get("complete", False)
-                    for model in status_info["models"].values()
+        if status_info["models"]:
+            configured_models = status_info["configured_models"]
+            if configured_models:
+                any_started = any(
+                    status_info["models"].get(model, {}).get("started", False)
+                    for model in configured_models
                 )
-                if all_complete:
-                    status_info["status"] = "finished"
-                else:
-                    status_info["status"] = "started"
+                status_info["status"] = "started" if any_started else "not_started"
+            else:
+                any_started = any(
+                    model_state.get("started", False)
+                    for model_state in status_info["models"].values()
+                )
+                status_info["status"] = "started" if any_started else "not_started"
         else:
             status_info["status"] = "not_started"
 
@@ -2515,20 +2548,30 @@ class VectorizeCLI:
         elif status_info["models"]:
             print(f"    Models: {len(status_info['models'])}")
 
-        if status_info["total_indexed"] > 0:
+        total_collection_count = status_info.get("total_collection_count", 0)
+        if total_collection_count > 0:
             print(
-                f"    Total Documents Indexed: {format_int(status_info['total_indexed'])}"
+                f"    Total Documents (collection count): {format_int(total_collection_count)}"
             )
 
         # Show model details if available
         if status_info["models"]:
             for model_name, model_state in sorted(status_info["models"].items()):
                 complete_marker = "✓" if model_state.get("complete") else "→"
-                docs = model_state.get("documents_indexed", 0)
+                total_docs = model_state.get(
+                    "collection_count",
+                    model_state.get("documents_indexed", 0),
+                )
+                resume_run_docs = model_state.get("documents_indexed", 0)
                 indexed_at = model_state.get("indexed_at", "")
                 print(
-                    f"      [{complete_marker}] {model_name}: {format_int(docs)} docs"
+                    f"      [{complete_marker}] {model_name}: "
+                    f"{format_int(total_docs)} docs total"
                 )
+                if resume_run_docs and resume_run_docs != total_docs:
+                    print(
+                        f"          Last run indexed: {format_int(resume_run_docs)} docs"
+                    )
                 if indexed_at:
                     print(f"          Last indexed: {indexed_at}")
 
@@ -2550,6 +2593,65 @@ class VectorizeCLI:
                 )
 
         print()
+
+    def handle_generate_query_config(self, args: argparse.Namespace) -> int:
+        """Generate query configuration from partition resume states."""
+        partition_out_dir: Path = args.partition_out_dir
+        output_path: Path = args.output
+        collection_prefix: Optional[str] = args.collection_prefix
+
+        if not partition_out_dir.exists():
+            logging.error(
+                "Partition output directory %s does not exist", partition_out_dir
+            )
+            return 1
+
+        logging.info("Generating query config from %s", partition_out_dir)
+
+        try:
+            query_config = generate_query_config(
+                partition_out_dir=partition_out_dir,
+                output_path=output_path,
+                collection_prefix=collection_prefix,
+            )
+
+            # Display summary
+            metadata = query_config["metadata"]
+            model_to_collections = query_config["model_to_collections"]
+
+            print(f"\n{'='*80}")
+            print("Query Configuration Generated")
+            print(f"{'='*80}")
+            print(f"Output File:        {output_path}")
+            print(f"Total Models:       {metadata['total_models']}")
+            print(f"Total Collections:  {metadata['total_collections']}")
+            print(f"Generated At:       {metadata['generated_at']}")
+            print(f"{'='*80}\n")
+
+            # Show model -> collections mapping
+            if model_to_collections:
+                print("Model to Collections Mapping:")
+                for model_name in sorted(model_to_collections.keys()):
+                    info = model_to_collections[model_name]
+                    print(f"\n  {model_name}:")
+                    print(f"    Collections:     {len(info['collections'])}")
+                    print(f"    Total Documents: {format_int(info['total_documents'])}")
+                    print(f"    Partitions:      {len(info['partitions'])}")
+                    if len(info["collections"]) <= 5:
+                        for coll in info["collections"]:
+                            print(f"      - {coll}")
+                    else:
+                        for coll in info["collections"][:3]:
+                            print(f"      - {coll}")
+                        print(f"      ... and {len(info['collections']) - 3} more")
+
+            print(f"\n{'='*80}")
+            logging.info("Query config successfully written to %s", output_path)
+            return 0
+
+        except (ValueError, OSError) as exc:
+            logging.error("Failed to generate query config: %s", exc)
+            return 1
 
 
 def main(argv: Optional[Sequence[str]] = None) -> int:

@@ -406,6 +406,8 @@ def index_from_config(
                     "indexed_at": datetime.now(timezone.utc)
                     .replace(tzinfo=None)
                     .isoformat(timespec="seconds"),
+                    # documents_indexed counts the records written in this run;
+                    # collection_count is the cumulative total across all resume runs.
                     "documents_indexed": documents_indexed,
                     "collection_count": collection_total,
                     "source_signature": signature,

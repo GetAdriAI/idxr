@@ -65,4 +65,43 @@ idxr prepare_datasets new-config foundation --model "$MODEL_REGISTRY"
 - 🔌 **Bring-your-own registry** – ship configs with ECC exports today, swap to CRM logs tomorrow, all with the same toolkit.
 - 📦 **PyPI-ready** – install via `pip install idxr`, call the CLIs, import the libraries, and compose your own orchestration scripts.
 
-For deep dives and operational recipes, explore [`FAQ.md`](FAQ.md), [`DOC.md`](DOC.md), [`TRUNCATION_EXAMPLES.md`](TRUNCATION_EXAMPLES.md), and [`ERROR_HANDLING.md`](ERROR_HANDLING.md).
+## Querying Multi-Collection Indexes
+
+When indexing large datasets (16M+ records), idxr distributes data across multiple ChromaDB collections using the `PartitionCollectionStrategy`. To query efficiently across these collections:
+
+1. **Generate query config** after indexing completes:
+   ```bash
+   idxr vectorize generate-query-config \
+     --partition-out-dir build/vector \
+     --output query_config.json \
+     --model "$MODEL_REGISTRY"
+   ```
+
+2. **Use the async query client** in your application:
+   ```python
+   from indexer.vectorize_lib.query_client import AsyncMultiCollectionQueryClient
+
+   async with AsyncMultiCollectionQueryClient(
+       config_path=Path("query_config.json"),
+       client_type="cloud",
+       cloud_api_key=os.getenv("CHROMA_API_TOKEN"),
+   ) as client:
+       # Query specific models
+       results = await client.query(
+           query_texts=["SAP transaction tables"],
+           n_results=10,
+           models=["Table", "Field"],  # Auto fan-out to relevant collections
+       )
+   ```
+
+The client automatically:
+- Maps model names to their collections
+- Fans out queries in parallel using `asyncio`
+- Merges and ranks results by distance across collections
+- Handles partial failures gracefully
+
+For complete documentation, see [`QUERYING.md`](QUERYING.md) and [`examples/query_example.py`](examples/query_example.py).
+
+---
+
+For deep dives and operational recipes, explore [`FAQ.md`](FAQ.md), [`DOC.md`](DOC.md), [`TRUNCATION_EXAMPLES.md`](TRUNCATION_EXAMPLES.md), [`ERROR_HANDLING.md`](ERROR_HANDLING.md), and [`QUERYING.md`](QUERYING.md).
