@@ -16,4 +16,4 @@ jobs:
         with:
           python-version: '3.12'
       - run: pip install mkdocs mkdocs-material
-      - run: mkdocs gh-deploy --force
+      - run: mkdocs gh-deploy --force --config-file indexer/mkdocs.yml
