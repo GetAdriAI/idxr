@@ -1,6 +1,30 @@
 """Command-line interface wiring for vectorize."""
 
 from __future__ import annotations
+from .validation import validate_config_sources
+from .utils import (
+    format_int,
+    get_token_encoder,
+    load_completion_state,
+    summarize_collection,
+    TOKEN_SAFETY_LIMIT,
+)
+from indexer.load_model_registry import load_model_registry
+from indexer.models import ModelSpec
+from .partitions import PARTITION_MANIFEST_VERSION, load_partition_manifest_entries
+from .logging_config import setup_logging
+from .indexing import (
+    InvalidCollectionError,
+    create_embedding_function,
+    index_from_config,
+)
+from .e2e import E2ETestConfig, E2ETestRecorder
+from .collection_strategies import (
+    CollectionStrategy,
+    FixedCollectionStrategy,
+    PartitionCollectionStrategy,
+)
+from .configuration import ModelConfig, generate_stub_config, load_config
 
 import argparse
 import json
@@ -9,37 +33,77 @@ import os
 import random
 import shutil
 import textwrap
+import threading
+import time
+from collections import deque
 from concurrent.futures import ThreadPoolExecutor, as_completed
 from datetime import datetime, timezone
 from pathlib import Path
-from typing import Any, Dict, List, Mapping, Optional, Sequence, Tuple
+from typing import Any, Deque, Dict, List, Mapping, Optional, Sequence, Tuple
 
 import chromadb
 
-from .configuration import ModelConfig, generate_stub_config, load_config
-from .collection_strategies import (
-    CollectionStrategy,
-    FixedCollectionStrategy,
-    PartitionCollectionStrategy,
+_OpenAIRateLimitError: Optional[type[BaseException]]
+try:  # pragma: no cover - optional dependency probing
+    # type: ignore[attr-defined]
+    from openai import RateLimitError as _OpenAIRateLimitErrorClass
+except ImportError:  # pragma: no cover - optional dependency probing
+    _OpenAIRateLimitError = None
+else:
+    _OpenAIRateLimitError = _OpenAIRateLimitErrorClass
+
+_RATE_LIMIT_ERROR_TYPES: Tuple[type[BaseException], ...] = (
+    (_OpenAIRateLimitError,) if isinstance(_OpenAIRateLimitError, type) else ()
 )
-from .e2e import E2ETestConfig, E2ETestRecorder
-from .indexing import (
-    InvalidCollectionError,
-    create_embedding_function,
-    index_from_config,
-)
-from .logging_config import setup_logging
-from .partitions import PARTITION_MANIFEST_VERSION, load_partition_manifest_entries
-from indexer.models import ModelSpec
-from indexer.load_model_registry import load_model_registry
-from .utils import (
-    format_int,
-    get_token_encoder,
-    load_completion_state,
-    summarize_collection,
-    TOKEN_SAFETY_LIMIT,
-)
-from .validation import validate_config_sources
+
+
+def _iter_exception_chain(error: BaseException):
+    """Yield an exception and its chained causes/contexts exactly once."""
+    seen: set[int] = set()
+    stack = [error]
+    while stack:
+        current = stack.pop()
+        if not isinstance(current, BaseException):
+            continue
+        identity = id(current)
+        if identity in seen:
+            continue
+        seen.add(identity)
+        yield current
+        cause = getattr(current, "__cause__", None)
+        context = getattr(current, "__context__", None)
+        if isinstance(cause, BaseException):
+            stack.append(cause)
+        if isinstance(context, BaseException):
+            stack.append(context)
+
+
+def _is_rate_limit_error(exc: BaseException) -> bool:
+    """Return True when the exception chain includes an OpenAI rate limit error."""
+    if not _RATE_LIMIT_ERROR_TYPES:
+        return False
+    return any(
+        isinstance(candidate, _RATE_LIMIT_ERROR_TYPES)
+        for candidate in _iter_exception_chain(exc)
+    )
+
+
+def _extract_retry_after_seconds(exc: BaseException) -> Optional[float]:
+    """Extract the suggested retry delay (in seconds) if present."""
+    for candidate in _iter_exception_chain(exc):
+        retry_after = getattr(candidate, "retry_after", None)
+        if isinstance(retry_after, (int, float)):
+            return float(retry_after)
+        error_payload = getattr(candidate, "error", None)
+        if isinstance(error_payload, Mapping):
+            direct = error_payload.get("retry_after")
+            if isinstance(direct, (int, float)):
+                return float(direct)
+            retry_ms = error_payload.get("retry_after_ms")
+            if isinstance(retry_ms, (int, float)):
+                return float(retry_ms) / 1000.0
+    return None
+
 
 CLI_DESCRIPTION = textwrap.dedent(
     """
@@ -1293,6 +1357,13 @@ class VectorizeCLI:
             return 1
 
         partition_model_metadata: Dict[str, Dict[str, Dict[str, Any]]] = {}
+        rate_limited_partitions: Deque[Tuple[str, Path, Path]] = deque()
+        rate_limit_attempts: Dict[str, int] = {}
+        rate_limit_backoff: Dict[str, float] = {}
+        rate_limit_lock = threading.Lock()
+        rate_limit_exit_code = 429
+        max_rate_limit_retries = 5
+        base_rate_limit_backoff = 1.0
 
         e2e_config: Optional[E2ETestConfig] = None
         if args.e2e_test_run:
@@ -1526,41 +1597,143 @@ class VectorizeCLI:
                     )
                     return 1
 
-            result = self._run_index_for_config(
-                config_path=config_path,
-                collection_name=collection_name,
-                persist_dir=partition_persist_dir,
-                batch_size=args.batch_size,
-                embedding_model=args.embedding_model,
-                resume=args.resume,
-                skip_validation=args.skip_validation,
-                embedding_function=local_embedding_function,
-                encoder=local_encoder,
-                resume_state_file=None,
-                client_type=client_type,
-                http_host=http_host,
-                http_port=http_port,
-                http_ssl=http_ssl,
-                http_headers=http_headers,
-                cloud_tenant=cloud_tenant,
-                cloud_database=cloud_database,
-                cloud_api_key=cloud_api_key,
-                cloud_host=cloud_host_override,
-                cloud_port=cloud_port_override,
-                cloud_ssl=cloud_ssl,
-                model_registry=args.model_registry,
-                truncation_strategy=args.truncation_strategy,
-                token_limit=args.token_limit,
-                embedding_token_limit=getattr(args, "embedding_token_limit", 8191),
-                extra_metadata={"partition_name": partition_name},
-                model_metadata=partition_model_metadata.get(partition_name),
-                e2e_config=e2e_config,
-            )
+            try:
+                result = self._run_index_for_config(
+                    config_path=config_path,
+                    collection_name=collection_name,
+                    persist_dir=partition_persist_dir,
+                    batch_size=args.batch_size,
+                    embedding_model=args.embedding_model,
+                    resume=args.resume,
+                    skip_validation=args.skip_validation,
+                    embedding_function=local_embedding_function,
+                    encoder=local_encoder,
+                    resume_state_file=None,
+                    client_type=client_type,
+                    http_host=http_host,
+                    http_port=http_port,
+                    http_ssl=http_ssl,
+                    http_headers=http_headers,
+                    cloud_tenant=cloud_tenant,
+                    cloud_database=cloud_database,
+                    cloud_api_key=cloud_api_key,
+                    cloud_host=cloud_host_override,
+                    cloud_port=cloud_port_override,
+                    cloud_ssl=cloud_ssl,
+                    model_registry=args.model_registry,
+                    truncation_strategy=args.truncation_strategy,
+                    token_limit=args.token_limit,
+                    embedding_token_limit=getattr(args, "embedding_token_limit", 8191),
+                    extra_metadata={"partition_name": partition_name},
+                    model_metadata=partition_model_metadata.get(partition_name),
+                    e2e_config=e2e_config,
+                )
+            except Exception as exc:
+                if _is_rate_limit_error(exc):
+                    retry_after = _extract_retry_after_seconds(exc)
+                    with rate_limit_lock:
+                        rate_limited_partitions.append(entry)
+                        attempts = rate_limit_attempts.get(partition_name, 0) + 1
+                        rate_limit_attempts[partition_name] = attempts
+                        if retry_after is not None:
+                            rate_limit_backoff[partition_name] = retry_after
+                        else:
+                            rate_limit_backoff.setdefault(
+                                partition_name, base_rate_limit_backoff
+                            )
+                    if retry_after is not None:
+                        logging.warning(
+                            "Partition %s hit OpenAI rate limit "
+                            "(attempt %d, retry in %.2fs); deferring.",
+                            partition_name,
+                            attempts,
+                            retry_after,
+                        )
+                    else:
+                        logging.warning(
+                            "Partition %s hit OpenAI rate limit "
+                            "(attempt %d); deferring for later retry.",
+                            partition_name,
+                            attempts,
+                        )
+                    return rate_limit_exit_code
+                raise
+
+            if result == 0:
+                with rate_limit_lock:
+                    rate_limit_attempts.pop(partition_name, None)
+                    rate_limit_backoff.pop(partition_name, None)
             return result
+
+        def _retry_rate_limited_partitions() -> bool:
+            attempt_cycle = 1
+            while True:
+                with rate_limit_lock:
+                    pending_entries = list(rate_limited_partitions)
+                    pending_backoffs = {
+                        entry[0]: rate_limit_backoff.get(entry[0], 0.0)
+                        for entry in pending_entries
+                    }
+                    rate_limited_partitions.clear()
+                    for name in pending_backoffs:
+                        rate_limit_backoff.pop(name, None)
+                if not pending_entries:
+                    return True
+
+                max_delay = max(pending_backoffs.values(), default=0.0)
+                if max_delay <= 0.0:
+                    max_delay = min(
+                        30.0, base_rate_limit_backoff * max(1, attempt_cycle - 1)
+                    )
+                else:
+                    max_delay = min(30.0, max_delay)
+                if max_delay > 0:
+                    logging.info(
+                        "Sleeping %.2f second(s) before retrying %d "
+                        "rate-limited partition(s) (cycle %d).",
+                        max_delay,
+                        len(pending_entries),
+                        attempt_cycle,
+                    )
+                    time.sleep(max_delay)
+
+                logging.info(
+                    "Retrying %d partition(s) deferred by rate limiting (cycle %d).",
+                    len(pending_entries),
+                    attempt_cycle,
+                )
+
+                progress = False
+                for entry in pending_entries:
+                    partition_name = entry[0]
+                    attempts = rate_limit_attempts.get(partition_name, 0)
+                    if attempts > max_rate_limit_retries:
+                        logging.error(
+                            "Partition %s exceeded maximum rate limit retries (%d).",
+                            partition_name,
+                            max_rate_limit_retries,
+                        )
+                        return False
+                    result = _index_single_partition(entry)
+                    if result == rate_limit_exit_code:
+                        continue
+                    if result != 0:
+                        logging.error(
+                            "Partition %s failed with exit code %s during rate limit retry.",
+                            partition_name,
+                            result,
+                        )
+                        return False
+                    progress = True
+                attempt_cycle += 1
+                if progress:
+                    continue
 
         if parallel_partitions == 1:
             for entry in validated_partitions:
                 result = _index_single_partition(entry)
+                if result == rate_limit_exit_code:
+                    continue
                 if result != 0:
                     return result
         else:
@@ -1585,6 +1758,12 @@ class VectorizeCLI:
                         )
                         had_error = True
                         continue
+                    if result == rate_limit_exit_code:
+                        logging.info(
+                            "Partition %s deferred due to rate limiting; will retry later.",
+                            partition_name,
+                        )
+                        continue
                     if result != 0:
                         logging.error(
                             "Partition %s failed with exit code %s",
@@ -1594,6 +1773,9 @@ class VectorizeCLI:
                         had_error = True
             if had_error:
                 return 1
+
+        if not _retry_rate_limited_partitions():
+            return 1
 
         logging.info(
             "Completed indexing for %d partition(s) from %s",
