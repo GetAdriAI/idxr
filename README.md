@@ -1,49 +1,66 @@
-# Indexer Package Overview
+# idxr: Model-Centric Indexing Story
 
-**Indexer** captures the whole lifecycle of turning raw SAP ECC exports into a production-ready vector store. The package bundles two complementary CLIs—`prepare_datasets.py` and `vectorize.py`—plus shared libraries that handle schema management, data validation, partition manifests, resume metadata, and drop/remediation flows.
+**idxr** exists for teams who want a dependable, repeatable way to turn any structured dataset into a searchable vector index. Everything revolves around three pillars:
 
-## Lifecycle in Three Acts
+- **Model-centric** – you describe your world as Pydantic models, and idxr keeps schemas, partitions, and manifests aligned with those models.
+- **Config-driven** – declarative JSON configs capture how each model should be prepared and indexed, so onboarding a new dataset is as easy as committing a config file.
+- **Fail-stop-retry** – every stage records checkpoints, row digests, and error payloads so the pipeline halts loudly when something goes wrong and then resumes from where it stopped.
 
-1. **Prepare** – `prepare_datasets.py` stubs configs, sanitises CSVs, deduplicates rows, and writes manifest-tracked partitions. It detects schema changes, versions them, and marks older partitions stale.
-2. **Index** – `vectorize.py` streams validated partitions into Chroma (local or cloud), manages resume state, enforces batch token limits, and keeps partition-level persistence for incremental replays.
-3. **Remediate** – Both tools support drop planning and application so you can retire stale data, purge partitions, or re-ingest after schema shifts without losing traceability.
+## A Day in the Life of an Index
 
-## Feature Highlights
+The timeline below is an example run that demonstrates how idxr accompanies a team from the first dataset drop through ongoing maintenance.
 
-- 🔄 **Schema-aware manifest** with versioning, stale partition tracking, and per-model metadata.
-- 🧠 **Resume-friendly ingestion** (per model and per partition) that records file offsets and row indices.
-- 🩹 **CSV repair safeguards**; `prepare_datasets.py` stitches newline-fractured rows around a configured malformed column before deciding to drop them.
-- ⚡ **Digest caches** keep reruns fast by persisting per-partition row hashes alongside the CSVs.
-- 🧵 **Parallel partition runs** fan out manifest indexing via `--parallel-partitions` when you want multiple partitions embedding at once.
-- 🗂️ **Pluggable collection strategies** let Chroma Cloud index each partition into its own collection while local runs stick with a single name.
-- 🚮 **Stale cleanup parity** – when partitions map to standalone collections, `--delete-stale` drops those collections wholesale before rebuilding.
-- 🎯 **E2E sampling mode** (`--e2e-test-run`) indexes random rows per CSV and writes an audit log so you can validate pipelines without processing millions of records.
-- 🧩 **Pluggable model registries**; pass `--model <module:REGISTRY>` to target ECC defaults or your own knowledge domain.
-- ☁️ **Chroma transport flexibility**; switch between persistent client and HTTP/Cloud with a couple of flags.
-- 🧹 **Drop + remediation tooling** that mirrors the migration workflow and keeps audit history.
-
-## Quick Start
+1. **First launch (Create)**  
+   You register your domain models in a registry module and run:
 
 ```bash
-# 1) Describe your registry target once
-export MODEL_REGISTRY_TARGET="kb.std.ecc_6_0_ehp_7.registry:MODEL_REGISTRY"
-
-# 2) Scaffold a dataset config
-prepare_datasets.py new-config ecc-foundation --model "$MODEL_REGISTRY_TARGET"
-
-# 3) Produce partitions (idempotent; MVCC-friendly)
-prepare_datasets.py \
-  --model "$MODEL_REGISTRY_TARGET" \
-  --config configs/ecc_foundation.json \
-  --output-root build/partitions
-
-# 4) Index into Chroma and resume safely across runs
-vectorize.py index \
-  --model "$MODEL_REGISTRY_TARGET" \
-  --partition-manifest build/partitions/manifest.json \
-  --partition-out-dir build/vector \
-  --collection ecc-std \
-  --resume
+export MODEL_REGISTRY="my_project.registry:MODEL_REGISTRY"
+idxr prepare_datasets new-config foundation --model "$MODEL_REGISTRY"
 ```
 
-Looking for deeper dives? Check out [`DOC.md`](DOC.md) for a narrative walkthrough and [`FAQ.md`](FAQ.md) for operational tips.
+   idxr scaffolds a config like:
+
+   ```json
+   {
+     "Contract": {
+       "path": "datasets/contracts.csv",
+       "columns": {
+         "id": "CONTRACT_ID",
+         "title": "CONTRACT_TITLE",
+         "summary": "DESCRIPTION"
+       },
+       "delimiter": ",",
+       "drop_na_columns": ["summary"]
+     }
+   }
+   ```
+
+   That config is committed, reviewed, and becomes the contract between data engineers and the index.
+
+2. **Daily growth (Add records)**  
+   New exports arrive. You rerun `idxr prepare_datasets` with the same config; idxr deduplicates rows using digests, appends fresh partitions, and bumps manifest timestamps. No manual cleanup, no double counting.
+
+3. **Domain expansion (Add models)**  
+   Product introduces a `SupportTicket` model. You add it to the registry, run `idxr prepare_datasets new-config support --model "$MODEL_REGISTRY" --models SupportTicket`, and drop the resulting JSON alongside the original config. idxr keeps each model’s partitions distinct but indexed in the same collection.
+
+4. **Schema shakeups (Update models)**  
+   If `Contract` gains a new field, the model registry changes first. `idxr prepare_datasets` notices, versions the schema, and marks older partitions as stale. When `idxr vectorize` runs next, it honours resume checkpoints, reindexes only what changed, and writes audit-friendly error reports for anything it had to skip.
+
+5. **Operational guardrails**  
+   During indexing, any hard failure triggers a fail-stop. idxr writes a YAML report capturing offending rows and context so you can fix the source data, then rerun `idxr vectorize --resume` to continue exactly where it left off. Optional E2E sampling produces JSON snippets you can review with stakeholders before the big push.
+
+## Tools in the Box
+
+- `idxr prepare_datasets` – partitions CSV/JSONL sources, heals malformed rows, maintains a manifest with digests, and generates drop plans.
+- `idxr vectorize` – streams partitions into ChromaDB (local or cloud), enforces token budgets, compacts documents via OpenAI when needed, and exports structured error reports.
+- Shared libraries – offer manifest helpers, truncation strategies, drop orchestration, and CLI utilities to wire everything together.
+
+## Why idxr?
+
+- 🔁 **Lifecycle clarity** – creation, accumulation, model expansion, and schema updates follow the same playbook.
+- ✍️ **Single source of truth** – configs live in version control, so reviews and rollbacks are trivial.
+- 🛑 **Predictable failure semantics** – when something breaks, the pipeline stops before corrupting data and tells you exactly what needs attention.
+- 🔌 **Bring-your-own registry** – ship configs with ECC exports today, swap to CRM logs tomorrow, all with the same toolkit.
+- 📦 **PyPI-ready** – install via `pip install idxr`, call the CLIs, import the libraries, and compose your own orchestration scripts.
+
+For deep dives and operational recipes, explore [`FAQ.md`](FAQ.md), [`DOC.md`](DOC.md), [`TRUNCATION_EXAMPLES.md`](TRUNCATION_EXAMPLES.md), and [`ERROR_HANDLING.md`](ERROR_HANDLING.md).
