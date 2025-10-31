@@ -57,6 +57,23 @@ _RATE_LIMIT_ERROR_TYPES: Tuple[type[BaseException], ...] = (
 )
 
 
+def _coerce_optional_int(value: Any) -> Optional[int]:
+    """Best-effort conversion to int, returning None when not possible."""
+    if isinstance(value, bool):
+        return None
+    if isinstance(value, int):
+        return value
+    if isinstance(value, str):
+        stripped = value.strip()
+        if not stripped:
+            return None
+        try:
+            return int(stripped)
+        except ValueError:
+            return None
+    return None
+
+
 def _iter_exception_chain(error: BaseException):
     """Yield an exception and its chained causes/contexts exactly once."""
     seen: set[int] = set()
@@ -2346,33 +2363,86 @@ class VectorizeCLI:
 
         # Check for errors
         errors_dir = partition_dir / "errors"
+        max_error_row_by_model: Dict[str, int] = {}
+        max_error_row_any = -1
         if errors_dir.exists() and errors_dir.is_dir():
             error_files = sorted(errors_dir.glob("*.yaml"), reverse=True)
-            for error_file in error_files[:5]:  # Show up to 5 most recent errors
+            for index, error_file in enumerate(error_files):
                 try:
                     import yaml
 
                     error_data = yaml.safe_load(error_file.read_text(encoding="utf-8"))
                     if isinstance(error_data, dict):
-                        status_info["errors"].append(
-                            {
-                                "timestamp": error_data.get("timestamp", ""),
-                                "model": error_data.get("model", ""),
-                                "exception_type": error_data.get("exception", {}).get(
-                                    "type", ""
-                                ),
-                                "exception_message": error_data.get(
-                                    "exception", {}
-                                ).get("message", "")[:100],
-                                "file": error_file.name,
-                            }
-                        )
+                        if index < 5:  # Show up to 5 most recent errors
+                            status_info["errors"].append(
+                                {
+                                    "timestamp": error_data.get("timestamp", ""),
+                                    "model": error_data.get("model", ""),
+                                    "exception_type": error_data.get(
+                                        "exception", {}
+                                    ).get("type", ""),
+                                    "exception_message": error_data.get(
+                                        "exception", {}
+                                    ).get("message", "")[:100],
+                                    "file": error_file.name,
+                                }
+                            )
+
+                        candidate_rows: List[int] = []
+                        rows_block = error_data.get("rows")
+                        if isinstance(rows_block, list):
+                            for row_entry in rows_block:
+                                if isinstance(row_entry, Mapping):
+                                    row_idx = row_entry.get("row_index")
+                                    coerced_row = _coerce_optional_int(row_idx)
+                                    if coerced_row is not None:
+                                        candidate_rows.append(coerced_row)
+                        resume_block = error_data.get("resume_state")
+                        if isinstance(resume_block, Mapping):
+                            resume_row = resume_block.get("row_index")
+                            coerced_resume_row = _coerce_optional_int(resume_row)
+                            if coerced_resume_row is not None:
+                                candidate_rows.append(coerced_resume_row)
+
+                        if candidate_rows:
+                            max_row = max(candidate_rows)
+                            model_name = error_data.get("model")
+                            if isinstance(model_name, str) and model_name:
+                                previous_max = max_error_row_by_model.get(model_name)
+                                if previous_max is None or max_row > previous_max:
+                                    max_error_row_by_model[model_name] = max_row
+                            if max_row > max_error_row_any:
+                                max_error_row_any = max_row
                 except Exception as exc:
                     logging.warning("Failed to read error file %s: %s", error_file, exc)
 
         # Determine overall status
+        progressed_past_errors = False
         if status_info["errors"]:
-            status_info["status"] = "errored"
+            model_progress_rows: Dict[str, int] = {}
+            for model_name, model_state in status_info["models"].items():
+                row_index_value = model_state.get("row_index")
+                coerced_progress_row = _coerce_optional_int(row_index_value)
+                if coerced_progress_row is not None:
+                    model_progress_rows[model_name] = coerced_progress_row
+
+            if max_error_row_by_model:
+                progressed_past_errors = True
+                for model_name, max_error_row in max_error_row_by_model.items():
+                    progress_row = model_progress_rows.get(model_name)
+                    if progress_row is None or progress_row <= max_error_row:
+                        progressed_past_errors = False
+                        break
+            elif max_error_row_any >= 0 and model_progress_rows:
+                progressed_past_errors = (
+                    max(model_progress_rows.values(), default=-1) > max_error_row_any
+                )
+
+        if status_info["errors"]:
+            if progressed_past_errors:
+                status_info["status"] = "started"
+            else:
+                status_info["status"] = "errored"
         elif status_info["models"]:
             # Check if we have config info to compare
             if status_info["configured_models"]:
