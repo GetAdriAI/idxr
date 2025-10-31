@@ -1,0 +1,655 @@
+<!DOCTYPE html>
+<html lang="en" data-bs-theme="light">
+    <head>
+        <meta charset="utf-8">
+        <meta http-equiv="X-UA-Compatible" content="IE=edge">
+        <meta name="viewport" content="width=device-width, initial-scale=1.0">
+        
+        
+        
+        <link rel="shortcut icon" href="../../img/favicon.ico">
+        <title>Config Reference - idxr Documentation</title>
+        <link href="../../css/bootstrap.min.css" rel="stylesheet">
+        <link href="../../css/fontawesome.min.css" rel="stylesheet">
+        <link href="../../css/brands.min.css" rel="stylesheet">
+        <link href="../../css/solid.min.css" rel="stylesheet">
+        <link href="../../css/v4-font-face.min.css" rel="stylesheet">
+        <link href="../../css/base.css" rel="stylesheet">
+        <link id="hljs-light" rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.8.0/styles/github.min.css" >
+        <link id="hljs-dark" rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.8.0/styles/github-dark.min.css" disabled>
+        <script src="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.8.0/highlight.min.js"></script>
+        <script>hljs.highlightAll();</script> 
+    </head>
+
+    <body>
+        <div class="navbar fixed-top navbar-expand-lg navbar-dark bg-primary">
+            <div class="container">
+                <a class="navbar-brand" href="../..">idxr Documentation</a>
+                <!-- Expander button -->
+                <button type="button" class="navbar-toggler" data-bs-toggle="collapse" data-bs-target="#navbar-collapse" aria-controls="navbar-collapse" aria-expanded="false" aria-label="Toggle navigation">
+                    <span class="navbar-toggler-icon"></span>
+                </button>
+
+                <!-- Expanded navigation -->
+                <div id="navbar-collapse" class="navbar-collapse collapse">
+                        <!-- Main navigation -->
+                        <ul class="nav navbar-nav">
+                            <li class="nav-item">
+                                <a href="../.." class="nav-link">Overview</a>
+                            </li>
+                            <li class="nav-item">
+                                <a href="../../getting-started/" class="nav-link">Getting Started</a>
+                            </li>
+                            <li class="nav-item dropdown">
+                                <a href="#" class="nav-link dropdown-toggle" role="button" data-bs-toggle="dropdown"  aria-expanded="false">Prepare Datasets</a>
+                                <ul class="dropdown-menu">
+                                    
+<li>
+    <a href="../../prepare-datasets/overview/" class="dropdown-item">Purpose & Workflow</a>
+</li>
+                                    
+<li>
+    <a href="../../prepare-datasets/config/" class="dropdown-item">Config Reference</a>
+</li>
+                                    
+  <li class="dropdown-submenu">
+    <a href="#" class="dropdown-item">CLI Arguments</a>
+    <ul class="dropdown-menu">
+            
+<li>
+    <a href="../../prepare-datasets/args/model/" class="dropdown-item">--model</a>
+</li>
+            
+<li>
+    <a href="../../prepare-datasets/args/config/" class="dropdown-item">--config</a>
+</li>
+            
+<li>
+    <a href="../../prepare-datasets/args/output-root/" class="dropdown-item">--output-root</a>
+</li>
+            
+<li>
+    <a href="../../prepare-datasets/args/directory-size/" class="dropdown-item">--directory-size</a>
+</li>
+            
+<li>
+    <a href="../../prepare-datasets/args/manifest/" class="dropdown-item">--manifest</a>
+</li>
+            
+<li>
+    <a href="../../prepare-datasets/args/log-level/" class="dropdown-item">--log-level</a>
+</li>
+    </ul>
+  </li>
+                                </ul>
+                            </li>
+                            <li class="nav-item dropdown">
+                                <a href="#" class="nav-link dropdown-toggle" role="button" data-bs-toggle="dropdown"  aria-expanded="false">Vectorize</a>
+                                <ul class="dropdown-menu">
+                                    
+<li>
+    <a href="../../vectorize/overview/" class="dropdown-item">Purpose & Workflow</a>
+</li>
+                                    
+<li>
+    <a href="../../vectorize/config/" class="dropdown-item">Config Reference</a>
+</li>
+                                    
+  <li class="dropdown-submenu">
+    <a href="#" class="dropdown-item">CLI Arguments</a>
+    <ul class="dropdown-menu">
+            
+<li>
+    <a href="../../vectorize/args/model/" class="dropdown-item">--model</a>
+</li>
+            
+<li>
+    <a href="../../vectorize/args/partition-manifest/" class="dropdown-item">--partition-manifest</a>
+</li>
+            
+<li>
+    <a href="../../vectorize/args/partition-out-dir/" class="dropdown-item">--partition-out-dir</a>
+</li>
+            
+<li>
+    <a href="../../vectorize/args/partition-dir/" class="dropdown-item">--partition-dir</a>
+</li>
+            
+<li>
+    <a href="../../vectorize/args/config/" class="dropdown-item">--config</a>
+</li>
+            
+<li>
+    <a href="../../vectorize/args/client-type/" class="dropdown-item">--client-type</a>
+</li>
+            
+<li>
+    <a href="../../vectorize/args/chroma-cloud-tenant/" class="dropdown-item">--chroma-cloud-tenant</a>
+</li>
+            
+<li>
+    <a href="../../vectorize/args/chroma-cloud-database/" class="dropdown-item">--chroma-cloud-database</a>
+</li>
+            
+<li>
+    <a href="../../vectorize/args/chroma-api-token/" class="dropdown-item">--chroma-api-token</a>
+</li>
+            
+<li>
+    <a href="../../vectorize/args/collection/" class="dropdown-item">--collection</a>
+</li>
+            
+<li>
+    <a href="../../vectorize/args/batch-size/" class="dropdown-item">--batch-size</a>
+</li>
+            
+<li>
+    <a href="../../vectorize/args/resume/" class="dropdown-item">--resume</a>
+</li>
+            
+<li>
+    <a href="../../vectorize/args/parallel-partitions/" class="dropdown-item">--parallel-partitions</a>
+</li>
+            
+<li>
+    <a href="../../vectorize/args/truncation-strategy/" class="dropdown-item">--truncation-strategy</a>
+</li>
+            
+<li>
+    <a href="../../vectorize/args/log-file/" class="dropdown-item">--log-file</a>
+</li>
+            
+<li>
+    <a href="../../vectorize/args/log-max-bytes/" class="dropdown-item">--log-max-bytes</a>
+</li>
+            
+<li>
+    <a href="../../vectorize/args/log-level/" class="dropdown-item">--log-level</a>
+</li>
+            
+<li>
+    <a href="../../vectorize/args/status-partition-out-dir/" class="dropdown-item">status --partition-out-dir</a>
+</li>
+            
+<li>
+    <a href="../../vectorize/args/status-partition-dir/" class="dropdown-item">status --partition-dir</a>
+</li>
+    </ul>
+  </li>
+                                </ul>
+                            </li>
+                            <li class="nav-item dropdown">
+                                <a href="#" class="nav-link dropdown-toggle active" aria-current="page" role="button" data-bs-toggle="dropdown"  aria-expanded="false">Query</a>
+                                <ul class="dropdown-menu">
+                                    
+<li>
+    <a href="../overview/" class="dropdown-item">Purpose & Workflow</a>
+</li>
+                                    
+<li>
+    <a href="../getting-started/" class="dropdown-item">Getting Started</a>
+</li>
+                                    
+<li>
+    <a href="../api-reference/" class="dropdown-item">API Reference</a>
+</li>
+                                    
+<li>
+    <a href="../examples/" class="dropdown-item">Examples</a>
+</li>
+                                    
+<li>
+    <a href="./" class="dropdown-item active" aria-current="page">Config Reference</a>
+</li>
+                                </ul>
+                            </li>
+                            <li class="nav-item dropdown">
+                                <a href="#" class="nav-link dropdown-toggle" role="button" data-bs-toggle="dropdown"  aria-expanded="false">Docs Operations</a>
+                                <ul class="dropdown-menu">
+                                    
+<li>
+    <a href="../../publishing/" class="dropdown-item">Publishing to GitHub Pages</a>
+</li>
+                                </ul>
+                            </li>
+                        </ul>
+
+                    <ul class="nav navbar-nav ms-md-auto">
+                        <li class="nav-item">
+                            <a href="#" class="nav-link" data-bs-toggle="modal" data-bs-target="#mkdocs_search_modal">
+                                <i class="fa fa-search"></i> Search
+                            </a>
+                        </li>
+                            <li class="nav-item">
+                                <a rel="prev" href="../examples/" class="nav-link">
+                                    <i class="fa fa-arrow-left"></i> Previous
+                                </a>
+                            </li>
+                            <li class="nav-item">
+                                <a rel="next" href="../../publishing/" class="nav-link">
+                                    Next <i class="fa fa-arrow-right"></i>
+                                </a>
+                            </li>
+                            <li class="nav-item">
+                                <a href="https://github.com/GetAdriAI/idxr/edit/master/docs/query/config.md" class="nav-link">Edit on GetAdriAI/idxr
+                                    </a>
+                            </li>
+                    </ul>
+                </div>
+            </div>
+        </div>
+
+        <div class="container">
+            <div class="row">
+                    <div class="col-md-3"><div class="navbar-expand-md bs-sidebar hidden-print affix" role="complementary">
+    <div class="navbar-header">
+        <button type="button" class="navbar-toggler collapsed" data-bs-toggle="collapse" data-bs-target="#toc-collapse" title="Table of Contents">
+            <span class="fa fa-angle-down"></span>
+        </button>
+    </div>
+
+    
+    <div id="toc-collapse" class="navbar-collapse collapse card bg-body-tertiary">
+        <ul class="nav flex-column">
+            
+            <li class="nav-item" data-bs-level="1"><a href="#query-configuration" class="nav-link">Query Configuration</a>
+              <ul class="nav flex-column">
+            <li class="nav-item" data-bs-level="2"><a href="#generating-query-config" class="nav-link">Generating Query Config</a>
+              <ul class="nav flex-column">
+              </ul>
+            </li>
+            <li class="nav-item" data-bs-level="2"><a href="#config-file-structure" class="nav-link">Config File Structure</a>
+              <ul class="nav flex-column">
+              </ul>
+            </li>
+            <li class="nav-item" data-bs-level="2"><a href="#resume-state-requirements" class="nav-link">Resume State Requirements</a>
+              <ul class="nav flex-column">
+              </ul>
+            </li>
+            <li class="nav-item" data-bs-level="2"><a href="#collection-filtering-logic" class="nav-link">Collection Filtering Logic</a>
+              <ul class="nav flex-column">
+              </ul>
+            </li>
+            <li class="nav-item" data-bs-level="2"><a href="#using-collection-prefix" class="nav-link">Using Collection Prefix</a>
+              <ul class="nav flex-column">
+              </ul>
+            </li>
+            <li class="nav-item" data-bs-level="2"><a href="#config-validation" class="nav-link">Config Validation</a>
+              <ul class="nav flex-column">
+              </ul>
+            </li>
+            <li class="nav-item" data-bs-level="2"><a href="#advanced-configuration" class="nav-link">Advanced Configuration</a>
+              <ul class="nav flex-column">
+              </ul>
+            </li>
+            <li class="nav-item" data-bs-level="2"><a href="#troubleshooting" class="nav-link">Troubleshooting</a>
+              <ul class="nav flex-column">
+              </ul>
+            </li>
+            <li class="nav-item" data-bs-level="2"><a href="#next-steps" class="nav-link">Next Steps</a>
+              <ul class="nav flex-column">
+              </ul>
+            </li>
+              </ul>
+            </li>
+        </ul>
+    </div>
+</div></div>
+                    <div class="col-md-9" role="main">
+
+<h1 id="query-configuration">Query Configuration<a class="headerlink" href="#query-configuration" title="Permanent link">&para;</a></h1>
+<p>The query configuration file maps model names to ChromaDB collection names, enabling efficient multi-collection queries.</p>
+<h2 id="generating-query-config">Generating Query Config<a class="headerlink" href="#generating-query-config" title="Permanent link">&para;</a></h2>
+<h3 id="cli-command">CLI Command<a class="headerlink" href="#cli-command" title="Permanent link">&para;</a></h3>
+<div class="codehilite"><pre><span></span><code>idxr<span class="w"> </span>vectorize<span class="w"> </span>generate-query-config<span class="w"> </span><span class="se">\</span>
+<span class="w">  </span>--partition-out-dir<span class="w"> </span>build/vector<span class="w"> </span><span class="se">\</span>
+<span class="w">  </span>--output<span class="w"> </span>query_config.json<span class="w"> </span><span class="se">\</span>
+<span class="w">  </span>--model<span class="w"> </span>path/to/model_registry.yaml<span class="w"> </span><span class="se">\</span>
+<span class="w">  </span>--collection-prefix<span class="w"> </span>my-index
+</code></pre></div>
+
+<p><strong>Arguments:</strong></p>
+<ul>
+<li><code>--partition-out-dir</code> (required): Directory containing partition subdirectories with resume state files</li>
+<li><code>--output</code> (required): Path to write query config JSON file</li>
+<li><code>--model</code> (required): Python module path to model registry (e.g., <code>my_package.registry:MODEL_REGISTRY</code>)</li>
+<li><code>--collection-prefix</code> (optional): Prefix to add to collection names</li>
+</ul>
+<h3 id="python-api">Python API<a class="headerlink" href="#python-api" title="Permanent link">&para;</a></h3>
+<div class="codehilite"><pre><span></span><code><span class="kn">from</span><span class="w"> </span><span class="nn">indexer.vectorize_lib</span><span class="w"> </span><span class="kn">import</span> <span class="n">generate_query_config</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">pathlib</span><span class="w"> </span><span class="kn">import</span> <span class="n">Path</span>
+
+<span class="n">config</span> <span class="o">=</span> <span class="n">generate_query_config</span><span class="p">(</span>
+    <span class="n">partition_out_dir</span><span class="o">=</span><span class="n">Path</span><span class="p">(</span><span class="s2">&quot;build/vector&quot;</span><span class="p">),</span>
+    <span class="n">output_path</span><span class="o">=</span><span class="n">Path</span><span class="p">(</span><span class="s2">&quot;query_config.json&quot;</span><span class="p">),</span>
+    <span class="n">collection_prefix</span><span class="o">=</span><span class="s2">&quot;ecc-prod&quot;</span><span class="p">,</span>
+<span class="p">)</span>
+</code></pre></div>
+
+<h2 id="config-file-structure">Config File Structure<a class="headerlink" href="#config-file-structure" title="Permanent link">&para;</a></h2>
+<h3 id="full-example">Full Example<a class="headerlink" href="#full-example" title="Permanent link">&para;</a></h3>
+<div class="codehilite"><pre><span></span><code><span class="p">{</span>
+<span class="w">  </span><span class="nt">&quot;metadata&quot;</span><span class="p">:</span><span class="w"> </span><span class="p">{</span>
+<span class="w">    </span><span class="nt">&quot;generated_at&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;2025-10-31T10:00:00.123456&quot;</span><span class="p">,</span>
+<span class="w">    </span><span class="nt">&quot;total_models&quot;</span><span class="p">:</span><span class="w"> </span><span class="mi">3</span><span class="p">,</span>
+<span class="w">    </span><span class="nt">&quot;total_collections&quot;</span><span class="p">:</span><span class="w"> </span><span class="mi">5</span><span class="p">,</span>
+<span class="w">    </span><span class="nt">&quot;collection_prefix&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;ecc-prod&quot;</span>
+<span class="w">  </span><span class="p">},</span>
+<span class="w">  </span><span class="nt">&quot;model_to_collections&quot;</span><span class="p">:</span><span class="w"> </span><span class="p">{</span>
+<span class="w">    </span><span class="nt">&quot;Table&quot;</span><span class="p">:</span><span class="w"> </span><span class="p">{</span>
+<span class="w">      </span><span class="nt">&quot;collections&quot;</span><span class="p">:</span><span class="w"> </span><span class="p">[</span><span class="s2">&quot;partition_00001&quot;</span><span class="p">,</span><span class="w"> </span><span class="s2">&quot;partition_00002&quot;</span><span class="p">],</span>
+<span class="w">      </span><span class="nt">&quot;total_documents&quot;</span><span class="p">:</span><span class="w"> </span><span class="mi">450000</span><span class="p">,</span>
+<span class="w">      </span><span class="nt">&quot;partitions&quot;</span><span class="p">:</span><span class="w"> </span><span class="p">[</span><span class="s2">&quot;partition_00001&quot;</span><span class="p">,</span><span class="w"> </span><span class="s2">&quot;partition_00002&quot;</span><span class="p">]</span>
+<span class="w">    </span><span class="p">},</span>
+<span class="w">    </span><span class="nt">&quot;Field&quot;</span><span class="p">:</span><span class="w"> </span><span class="p">{</span>
+<span class="w">      </span><span class="nt">&quot;collections&quot;</span><span class="p">:</span><span class="w"> </span><span class="p">[</span><span class="s2">&quot;partition_00002&quot;</span><span class="p">,</span><span class="w"> </span><span class="s2">&quot;partition_00003&quot;</span><span class="p">,</span><span class="w"> </span><span class="s2">&quot;partition_00005&quot;</span><span class="p">],</span>
+<span class="w">      </span><span class="nt">&quot;total_documents&quot;</span><span class="p">:</span><span class="w"> </span><span class="mi">680000</span><span class="p">,</span>
+<span class="w">      </span><span class="nt">&quot;partitions&quot;</span><span class="p">:</span><span class="w"> </span><span class="p">[</span><span class="s2">&quot;partition_00002&quot;</span><span class="p">,</span><span class="w"> </span><span class="s2">&quot;partition_00003&quot;</span><span class="p">,</span><span class="w"> </span><span class="s2">&quot;partition_00005&quot;</span><span class="p">]</span>
+<span class="w">    </span><span class="p">},</span>
+<span class="w">    </span><span class="nt">&quot;Domain&quot;</span><span class="p">:</span><span class="w"> </span><span class="p">{</span>
+<span class="w">      </span><span class="nt">&quot;collections&quot;</span><span class="p">:</span><span class="w"> </span><span class="p">[</span><span class="s2">&quot;partition_00004&quot;</span><span class="p">,</span><span class="w"> </span><span class="s2">&quot;partition_00005&quot;</span><span class="p">],</span>
+<span class="w">      </span><span class="nt">&quot;total_documents&quot;</span><span class="p">:</span><span class="w"> </span><span class="mi">120000</span><span class="p">,</span>
+<span class="w">      </span><span class="nt">&quot;partitions&quot;</span><span class="p">:</span><span class="w"> </span><span class="p">[</span><span class="s2">&quot;partition_00004&quot;</span><span class="p">,</span><span class="w"> </span><span class="s2">&quot;partition_00005&quot;</span><span class="p">]</span>
+<span class="w">    </span><span class="p">}</span>
+<span class="w">  </span><span class="p">},</span>
+<span class="w">  </span><span class="nt">&quot;collection_to_models&quot;</span><span class="p">:</span><span class="w"> </span><span class="p">{</span>
+<span class="w">    </span><span class="nt">&quot;partition_00001&quot;</span><span class="p">:</span><span class="w"> </span><span class="p">[</span><span class="s2">&quot;Table&quot;</span><span class="p">],</span>
+<span class="w">    </span><span class="nt">&quot;partition_00002&quot;</span><span class="p">:</span><span class="w"> </span><span class="p">[</span><span class="s2">&quot;Table&quot;</span><span class="p">,</span><span class="w"> </span><span class="s2">&quot;Field&quot;</span><span class="p">],</span>
+<span class="w">    </span><span class="nt">&quot;partition_00003&quot;</span><span class="p">:</span><span class="w"> </span><span class="p">[</span><span class="s2">&quot;Field&quot;</span><span class="p">],</span>
+<span class="w">    </span><span class="nt">&quot;partition_00004&quot;</span><span class="p">:</span><span class="w"> </span><span class="p">[</span><span class="s2">&quot;Domain&quot;</span><span class="p">],</span>
+<span class="w">    </span><span class="nt">&quot;partition_00005&quot;</span><span class="p">:</span><span class="w"> </span><span class="p">[</span><span class="s2">&quot;Field&quot;</span><span class="p">,</span><span class="w"> </span><span class="s2">&quot;Domain&quot;</span><span class="p">]</span>
+<span class="w">  </span><span class="p">}</span>
+<span class="p">}</span>
+</code></pre></div>
+
+<h3 id="field-descriptions">Field Descriptions<a class="headerlink" href="#field-descriptions" title="Permanent link">&para;</a></h3>
+<h4 id="metadata">metadata<a class="headerlink" href="#metadata" title="Permanent link">&para;</a></h4>
+<ul>
+<li><strong>generated_at</strong>: ISO 8601 timestamp of config generation</li>
+<li><strong>total_models</strong>: Number of distinct models with indexed documents</li>
+<li><strong>total_collections</strong>: Number of ChromaDB collections (partitions)</li>
+<li><strong>collection_prefix</strong>: Optional prefix applied to collection names</li>
+</ul>
+<h4 id="model_to_collections">model_to_collections<a class="headerlink" href="#model_to_collections" title="Permanent link">&para;</a></h4>
+<p>Mapping from model name to collection information:</p>
+<ul>
+<li><strong>collections</strong>: List of collection names containing this model</li>
+<li><strong>total_documents</strong>: Total document count across all collections for this model</li>
+<li><strong>partitions</strong>: List of partition names (same as collections unless prefix is used)</li>
+</ul>
+<h4 id="collection_to_models">collection_to_models<a class="headerlink" href="#collection_to_models" title="Permanent link">&para;</a></h4>
+<p>Inverse mapping from collection name to list of model names it contains.</p>
+<h2 id="resume-state-requirements">Resume State Requirements<a class="headerlink" href="#resume-state-requirements" title="Permanent link">&para;</a></h2>
+<p>The query config is generated by scanning <code>*_resume_state.json</code> files in each partition directory. These files must contain:</p>
+<div class="codehilite"><pre><span></span><code><span class="p">{</span>
+<span class="w">  </span><span class="nt">&quot;ModelName&quot;</span><span class="p">:</span><span class="w"> </span><span class="p">{</span>
+<span class="w">    </span><span class="nt">&quot;started&quot;</span><span class="p">:</span><span class="w"> </span><span class="kc">true</span><span class="p">,</span>
+<span class="w">    </span><span class="nt">&quot;complete&quot;</span><span class="p">:</span><span class="w"> </span><span class="kc">true</span><span class="p">,</span>
+<span class="w">    </span><span class="nt">&quot;collection_count&quot;</span><span class="p">:</span><span class="w"> </span><span class="mi">100000</span><span class="p">,</span>
+<span class="w">    </span><span class="nt">&quot;documents_indexed&quot;</span><span class="p">:</span><span class="w"> </span><span class="mi">100000</span><span class="p">,</span>
+<span class="w">    </span><span class="nt">&quot;indexed_at&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;2025-10-31T10:00:00&quot;</span>
+<span class="w">  </span><span class="p">}</span>
+<span class="p">}</span>
+</code></pre></div>
+
+<p><strong>Required fields:</strong></p>
+<ul>
+<li><code>started</code>: Must be <code>true</code> (models not started are excluded)</li>
+<li><code>collection_count</code>: Must be &gt; 0 (models with no documents are excluded)</li>
+</ul>
+<p><strong>Optional fields:</strong></p>
+<ul>
+<li><code>complete</code>: Indicates if indexing completed (doesn't affect inclusion)</li>
+<li><code>documents_indexed</code>: Actual documents indexed (may differ from collection_count)</li>
+<li><code>indexed_at</code>: Timestamp of indexing</li>
+</ul>
+<h2 id="collection-filtering-logic">Collection Filtering Logic<a class="headerlink" href="#collection-filtering-logic" title="Permanent link">&para;</a></h2>
+<p>When generating the query config:</p>
+<ol>
+<li><strong>Scan partition directories</strong> for <code>*_resume_state.json</code> files</li>
+<li><strong>Filter models</strong> where <code>started == true</code> and <code>collection_count &gt; 0</code></li>
+<li><strong>Build mappings</strong> for model-to-collections and collection-to-models</li>
+<li><strong>Sort collections</strong> for deterministic ordering</li>
+</ol>
+<h3 id="excluded-models">Excluded Models<a class="headerlink" href="#excluded-models" title="Permanent link">&para;</a></h3>
+<p>Models are excluded if:</p>
+<ul>
+<li><code>started</code> is <code>false</code> or missing</li>
+<li><code>collection_count</code> is <code>0</code> or missing</li>
+<li>Resume state file is malformed</li>
+<li>Model state is not a dictionary</li>
+</ul>
+<h2 id="using-collection-prefix">Using Collection Prefix<a class="headerlink" href="#using-collection-prefix" title="Permanent link">&para;</a></h2>
+<p>When indexing with a collection prefix, ensure query config uses the same prefix:</p>
+<h3 id="indexing-with-prefix">Indexing with Prefix<a class="headerlink" href="#indexing-with-prefix" title="Permanent link">&para;</a></h3>
+<div class="codehilite"><pre><span></span><code>idxr<span class="w"> </span>vectorize<span class="w"> </span>index<span class="w"> </span><span class="se">\</span>
+<span class="w">  </span>--collection-prefix<span class="w"> </span>ecc-prod<span class="w"> </span><span class="se">\</span>
+<span class="w">  </span><span class="c1"># ... other args</span>
+</code></pre></div>
+
+<h3 id="query-config-with-prefix">Query Config with Prefix<a class="headerlink" href="#query-config-with-prefix" title="Permanent link">&para;</a></h3>
+<div class="codehilite"><pre><span></span><code>idxr<span class="w"> </span>vectorize<span class="w"> </span>generate-query-config<span class="w"> </span><span class="se">\</span>
+<span class="w">  </span>--collection-prefix<span class="w"> </span>ecc-prod<span class="w"> </span><span class="se">\</span>
+<span class="w">  </span><span class="c1"># ... other args</span>
+</code></pre></div>
+
+<p>The prefix is applied to collection names in the config:</p>
+<div class="codehilite"><pre><span></span><code><span class="p">{</span>
+<span class="w">  </span><span class="nt">&quot;model_to_collections&quot;</span><span class="p">:</span><span class="w"> </span><span class="p">{</span>
+<span class="w">    </span><span class="nt">&quot;Table&quot;</span><span class="p">:</span><span class="w"> </span><span class="p">{</span>
+<span class="w">      </span><span class="nt">&quot;collections&quot;</span><span class="p">:</span><span class="w"> </span><span class="p">[</span><span class="s2">&quot;ecc-prod_partition_00001&quot;</span><span class="p">,</span><span class="w"> </span><span class="s2">&quot;ecc-prod_partition_00002&quot;</span><span class="p">]</span>
+<span class="w">    </span><span class="p">}</span>
+<span class="w">  </span><span class="p">}</span>
+<span class="p">}</span>
+</code></pre></div>
+
+<h2 id="config-validation">Config Validation<a class="headerlink" href="#config-validation" title="Permanent link">&para;</a></h2>
+<p>When loading a query config, the following validations are performed:</p>
+<ol>
+<li><strong>File exists</strong> and is readable</li>
+<li><strong>Valid JSON</strong> format</li>
+<li><strong>Required keys</strong> present: <code>metadata</code>, <code>model_to_collections</code>, <code>collection_to_models</code></li>
+<li><strong>Metadata fields</strong> include <code>total_models</code> and <code>total_collections</code></li>
+</ol>
+<h3 id="validation-errors">Validation Errors<a class="headerlink" href="#validation-errors" title="Permanent link">&para;</a></h3>
+<div class="codehilite"><pre><span></span><code><span class="kn">from</span><span class="w"> </span><span class="nn">indexer.vectorize_lib</span><span class="w"> </span><span class="kn">import</span> <span class="n">load_query_config</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">pathlib</span><span class="w"> </span><span class="kn">import</span> <span class="n">Path</span>
+
+<span class="k">try</span><span class="p">:</span>
+    <span class="n">config</span> <span class="o">=</span> <span class="n">load_query_config</span><span class="p">(</span><span class="n">Path</span><span class="p">(</span><span class="s2">&quot;query_config.json&quot;</span><span class="p">))</span>
+<span class="k">except</span> <span class="ne">ValueError</span> <span class="k">as</span> <span class="n">e</span><span class="p">:</span>
+    <span class="c1"># Possible errors:</span>
+    <span class="c1"># - &quot;Query config file &lt;path&gt; does not exist&quot;</span>
+    <span class="c1"># - &quot;Failed to read query config: &lt;json error&gt;&quot;</span>
+    <span class="c1"># - &quot;Query config is missing required keys: ...&quot;</span>
+    <span class="nb">print</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;Config error: </span><span class="si">{</span><span class="n">e</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">)</span>
+</code></pre></div>
+
+<h2 id="advanced-configuration">Advanced Configuration<a class="headerlink" href="#advanced-configuration" title="Permanent link">&para;</a></h2>
+<h3 id="multi-environment-configs">Multi-Environment Configs<a class="headerlink" href="#multi-environment-configs" title="Permanent link">&para;</a></h3>
+<p>Generate separate configs for different environments:</p>
+<div class="codehilite"><pre><span></span><code><span class="c1"># Production index</span>
+idxr<span class="w"> </span>vectorize<span class="w"> </span>generate-query-config<span class="w"> </span><span class="se">\</span>
+<span class="w">  </span>--partition-out-dir<span class="w"> </span>prod/vector<span class="w"> </span><span class="se">\</span>
+<span class="w">  </span>--output<span class="w"> </span>query_config_prod.json<span class="w"> </span><span class="se">\</span>
+<span class="w">  </span>--collection-prefix<span class="w"> </span>prod
+
+<span class="c1"># Staging index</span>
+idxr<span class="w"> </span>vectorize<span class="w"> </span>generate-query-config<span class="w"> </span><span class="se">\</span>
+<span class="w">  </span>--partition-out-dir<span class="w"> </span>staging/vector<span class="w"> </span><span class="se">\</span>
+<span class="w">  </span>--output<span class="w"> </span>query_config_staging.json<span class="w"> </span><span class="se">\</span>
+<span class="w">  </span>--collection-prefix<span class="w"> </span>staging
+</code></pre></div>
+
+<h3 id="partial-model-indexing">Partial Model Indexing<a class="headerlink" href="#partial-model-indexing" title="Permanent link">&para;</a></h3>
+<p>If you index models at different times, regenerate the query config after each indexing batch:</p>
+<div class="codehilite"><pre><span></span><code><span class="c1"># After indexing Table model</span>
+idxr<span class="w"> </span>vectorize<span class="w"> </span>generate-query-config<span class="w"> </span><span class="se">\</span>
+<span class="w">  </span>--partition-out-dir<span class="w"> </span>build/vector<span class="w"> </span><span class="se">\</span>
+<span class="w">  </span>--output<span class="w"> </span>query_config.json
+
+<span class="c1"># After adding Field model</span>
+<span class="c1"># Regenerate to include Field in the config</span>
+idxr<span class="w"> </span>vectorize<span class="w"> </span>generate-query-config<span class="w"> </span><span class="se">\</span>
+<span class="w">  </span>--partition-out-dir<span class="w"> </span>build/vector<span class="w"> </span><span class="se">\</span>
+<span class="w">  </span>--output<span class="w"> </span>query_config.json
+</code></pre></div>
+
+<p>The config will automatically include all models that have been indexed.</p>
+<h3 id="version-control">Version Control<a class="headerlink" href="#version-control" title="Permanent link">&para;</a></h3>
+<p>Store query configs in version control alongside model registries:</p>
+<div class="codehilite"><pre><span></span><code><span class="n">project</span><span class="o">/</span>
+<span class="err">├──</span><span class="w"> </span><span class="n">config</span><span class="o">/</span>
+<span class="err">│</span><span class="w">   </span><span class="err">├──</span><span class="w"> </span><span class="n">model_registry</span><span class="p">.</span><span class="n">yaml</span>
+<span class="err">│</span><span class="w">   </span><span class="err">├──</span><span class="w"> </span><span class="n">query_config_prod</span><span class="p">.</span><span class="n">json</span>
+<span class="err">│</span><span class="w">   </span><span class="err">└──</span><span class="w"> </span><span class="n">query_config_staging</span><span class="p">.</span><span class="n">json</span>
+<span class="err">├──</span><span class="w"> </span><span class="n">src</span><span class="o">/</span>
+<span class="err">└──</span><span class="w"> </span><span class="n">README</span><span class="p">.</span><span class="n">md</span>
+</code></pre></div>
+
+<p>Update the config after indexing changes:</p>
+<div class="codehilite"><pre><span></span><code><span class="c1"># After re-indexing</span>
+idxr<span class="w"> </span>vectorize<span class="w"> </span>generate-query-config<span class="w"> </span><span class="se">\</span>
+<span class="w">  </span>--partition-out-dir<span class="w"> </span>build/vector<span class="w"> </span><span class="se">\</span>
+<span class="w">  </span>--output<span class="w"> </span>config/query_config_prod.json
+
+<span class="c1"># Commit changes</span>
+git<span class="w"> </span>add<span class="w"> </span>config/query_config_prod.json
+git<span class="w"> </span>commit<span class="w"> </span>-m<span class="w"> </span><span class="s2">&quot;Update query config after re-indexing&quot;</span>
+</code></pre></div>
+
+<h2 id="troubleshooting">Troubleshooting<a class="headerlink" href="#troubleshooting" title="Permanent link">&para;</a></h2>
+<h3 id="no-collections-found">No Collections Found<a class="headerlink" href="#no-collections-found" title="Permanent link">&para;</a></h3>
+<p><strong>Problem</strong>: Query config has <code>total_collections: 0</code></p>
+<p><strong>Causes</strong>:
+- No resume state files in partition directories
+- All models have <code>started: false</code>
+- All models have <code>collection_count: 0</code></p>
+<p><strong>Solution</strong>:</p>
+<div class="codehilite"><pre><span></span><code><span class="c1"># Check partition directory structure</span>
+ls<span class="w"> </span>-la<span class="w"> </span>build/vector/partition_*/
+
+<span class="c1"># Check resume state content</span>
+cat<span class="w"> </span>build/vector/partition_00001/partition_00001_resume_state.json
+</code></pre></div>
+
+<h3 id="model-not-in-config">Model Not in Config<a class="headerlink" href="#model-not-in-config" title="Permanent link">&para;</a></h3>
+<p><strong>Problem</strong>: Model exists in resume state but not in query config</p>
+<p><strong>Causes</strong>:
+- Model has <code>started: false</code>
+- Model has <code>collection_count: 0</code>
+- Resume state file is malformed</p>
+<p><strong>Solution</strong>:</p>
+<div class="codehilite"><pre><span></span><code><span class="kn">import</span><span class="w"> </span><span class="nn">json</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">pathlib</span><span class="w"> </span><span class="kn">import</span> <span class="n">Path</span>
+
+<span class="c1"># Check resume state</span>
+<span class="n">resume_file</span> <span class="o">=</span> <span class="n">Path</span><span class="p">(</span><span class="s2">&quot;build/vector/partition_00001/partition_00001_resume_state.json&quot;</span><span class="p">)</span>
+<span class="n">state</span> <span class="o">=</span> <span class="n">json</span><span class="o">.</span><span class="n">loads</span><span class="p">(</span><span class="n">resume_file</span><span class="o">.</span><span class="n">read_text</span><span class="p">())</span>
+
+<span class="k">for</span> <span class="n">model</span><span class="p">,</span> <span class="n">info</span> <span class="ow">in</span> <span class="n">state</span><span class="o">.</span><span class="n">items</span><span class="p">():</span>
+    <span class="nb">print</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;</span><span class="si">{</span><span class="n">model</span><span class="si">}</span><span class="s2">:&quot;</span><span class="p">)</span>
+    <span class="nb">print</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;  started: </span><span class="si">{</span><span class="n">info</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s1">&#39;started&#39;</span><span class="p">)</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">)</span>
+    <span class="nb">print</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;  collection_count: </span><span class="si">{</span><span class="n">info</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s1">&#39;collection_count&#39;</span><span class="p">)</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">)</span>
+</code></pre></div>
+
+<h3 id="collection-count-mismatch">Collection Count Mismatch<a class="headerlink" href="#collection-count-mismatch" title="Permanent link">&para;</a></h3>
+<p><strong>Problem</strong>: Config shows fewer collections than expected</p>
+<p><strong>Causes</strong>:
+- Some partitions have no valid models (excluded from config)
+- Collection prefix mismatch</p>
+<p><strong>Solution</strong>:</p>
+<div class="codehilite"><pre><span></span><code><span class="c1"># Verify all partitions have resume states</span>
+find<span class="w"> </span>build/vector<span class="w"> </span>-name<span class="w"> </span><span class="s2">&quot;*_resume_state.json&quot;</span>
+
+<span class="c1"># Check for empty or invalid states</span>
+<span class="k">for</span><span class="w"> </span>f<span class="w"> </span><span class="k">in</span><span class="w"> </span>build/vector/partition_*/*_resume_state.json<span class="p">;</span><span class="w"> </span><span class="k">do</span>
+<span class="w">    </span><span class="nb">echo</span><span class="w"> </span><span class="s2">&quot;=== </span><span class="nv">$f</span><span class="s2"> ===&quot;</span>
+<span class="w">    </span>cat<span class="w"> </span><span class="s2">&quot;</span><span class="nv">$f</span><span class="s2">&quot;</span>
+<span class="k">done</span>
+</code></pre></div>
+
+<h2 id="next-steps">Next Steps<a class="headerlink" href="#next-steps" title="Permanent link">&para;</a></h2>
+<ul>
+<li>Review <a href="../api-reference/">API Reference</a> for programmatic config access</li>
+<li>Check <a href="../examples/">Examples</a> for query config usage patterns</li>
+<li>Read <a href="../getting-started/">Getting Started</a> for complete workflow</li>
+</ul></div>
+            </div>
+        </div>
+
+        <footer class="col-md-12">
+            <hr>
+            <p>Documentation built with <a href="https://www.mkdocs.org/">MkDocs</a>.</p>
+        </footer>
+        <script src="../../js/bootstrap.bundle.min.js"></script>
+        <script>
+            var base_url = "../..",
+                shortcuts = {"help": 191, "next": 78, "previous": 80, "search": 83};
+        </script>
+        <script src="../../js/base.js"></script>
+        <script src="../../search/main.js"></script>
+
+        <div class="modal" id="mkdocs_search_modal" tabindex="-1" role="dialog" aria-labelledby="searchModalLabel" aria-hidden="true">
+    <div class="modal-dialog modal-lg">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h4 class="modal-title" id="searchModalLabel">Search</h4>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+            <div class="modal-body">
+                <p>From here you can search these documents. Enter your search terms below.</p>
+                <form>
+                    <div class="form-group">
+                        <input type="search" class="form-control" placeholder="Search..." id="mkdocs-search-query" title="Type search term here">
+                    </div>
+                </form>
+                <div id="mkdocs-search-results" data-no-results-text="No results found"></div>
+            </div>
+            <div class="modal-footer">
+            </div>
+        </div>
+    </div>
+</div><div class="modal" id="mkdocs_keyboard_modal" tabindex="-1" role="dialog" aria-labelledby="keyboardModalLabel" aria-hidden="true">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h4 class="modal-title" id="keyboardModalLabel">Keyboard Shortcuts</h4>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+            <div class="modal-body">
+              <table class="table">
+                <thead>
+                  <tr>
+                    <th style="width: 20%;">Keys</th>
+                    <th>Action</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  <tr>
+                    <td class="help shortcut"><kbd>?</kbd></td>
+                    <td>Open this help</td>
+                  </tr>
+                  <tr>
+                    <td class="next shortcut"><kbd>n</kbd></td>
+                    <td>Next page</td>
+                  </tr>
+                  <tr>
+                    <td class="prev shortcut"><kbd>p</kbd></td>
+                    <td>Previous page</td>
+                  </tr>
+                  <tr>
+                    <td class="search shortcut"><kbd>s</kbd></td>
+                    <td>Search</td>
+                  </tr>
+                </tbody>
+              </table>
+            </div>
+            <div class="modal-footer">
+            </div>
+        </div>
+    </div>
+</div>
+
+    </body>
+</html>

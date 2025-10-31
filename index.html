@@ -1,0 +1,401 @@
+<!DOCTYPE html>
+<html lang="en" data-bs-theme="light">
+    <head>
+        <meta charset="utf-8">
+        <meta http-equiv="X-UA-Compatible" content="IE=edge">
+        <meta name="viewport" content="width=device-width, initial-scale=1.0">
+        <meta name="description" content="Model-centric, config-driven indexing toolkit for vector databases.">
+        
+        
+        <link rel="shortcut icon" href="img/favicon.ico">
+        <title>idxr Documentation</title>
+        <link href="css/bootstrap.min.css" rel="stylesheet">
+        <link href="css/fontawesome.min.css" rel="stylesheet">
+        <link href="css/brands.min.css" rel="stylesheet">
+        <link href="css/solid.min.css" rel="stylesheet">
+        <link href="css/v4-font-face.min.css" rel="stylesheet">
+        <link href="css/base.css" rel="stylesheet">
+        <link id="hljs-light" rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.8.0/styles/github.min.css" >
+        <link id="hljs-dark" rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.8.0/styles/github-dark.min.css" disabled>
+        <script src="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.8.0/highlight.min.js"></script>
+        <script>hljs.highlightAll();</script> 
+    </head>
+
+    <body class="homepage">
+        <div class="navbar fixed-top navbar-expand-lg navbar-dark bg-primary">
+            <div class="container">
+                <a class="navbar-brand" href=".">idxr Documentation</a>
+                <!-- Expander button -->
+                <button type="button" class="navbar-toggler" data-bs-toggle="collapse" data-bs-target="#navbar-collapse" aria-controls="navbar-collapse" aria-expanded="false" aria-label="Toggle navigation">
+                    <span class="navbar-toggler-icon"></span>
+                </button>
+
+                <!-- Expanded navigation -->
+                <div id="navbar-collapse" class="navbar-collapse collapse">
+                        <!-- Main navigation -->
+                        <ul class="nav navbar-nav">
+                            <li class="nav-item">
+                                <a href="." class="nav-link active" aria-current="page">Overview</a>
+                            </li>
+                            <li class="nav-item">
+                                <a href="getting-started/" class="nav-link">Getting Started</a>
+                            </li>
+                            <li class="nav-item dropdown">
+                                <a href="#" class="nav-link dropdown-toggle" role="button" data-bs-toggle="dropdown"  aria-expanded="false">Prepare Datasets</a>
+                                <ul class="dropdown-menu">
+                                    
+<li>
+    <a href="prepare-datasets/overview/" class="dropdown-item">Purpose & Workflow</a>
+</li>
+                                    
+<li>
+    <a href="prepare-datasets/config/" class="dropdown-item">Config Reference</a>
+</li>
+                                    
+  <li class="dropdown-submenu">
+    <a href="#" class="dropdown-item">CLI Arguments</a>
+    <ul class="dropdown-menu">
+            
+<li>
+    <a href="prepare-datasets/args/model/" class="dropdown-item">--model</a>
+</li>
+            
+<li>
+    <a href="prepare-datasets/args/config/" class="dropdown-item">--config</a>
+</li>
+            
+<li>
+    <a href="prepare-datasets/args/output-root/" class="dropdown-item">--output-root</a>
+</li>
+            
+<li>
+    <a href="prepare-datasets/args/directory-size/" class="dropdown-item">--directory-size</a>
+</li>
+            
+<li>
+    <a href="prepare-datasets/args/manifest/" class="dropdown-item">--manifest</a>
+</li>
+            
+<li>
+    <a href="prepare-datasets/args/log-level/" class="dropdown-item">--log-level</a>
+</li>
+    </ul>
+  </li>
+                                </ul>
+                            </li>
+                            <li class="nav-item dropdown">
+                                <a href="#" class="nav-link dropdown-toggle" role="button" data-bs-toggle="dropdown"  aria-expanded="false">Vectorize</a>
+                                <ul class="dropdown-menu">
+                                    
+<li>
+    <a href="vectorize/overview/" class="dropdown-item">Purpose & Workflow</a>
+</li>
+                                    
+<li>
+    <a href="vectorize/config/" class="dropdown-item">Config Reference</a>
+</li>
+                                    
+  <li class="dropdown-submenu">
+    <a href="#" class="dropdown-item">CLI Arguments</a>
+    <ul class="dropdown-menu">
+            
+<li>
+    <a href="vectorize/args/model/" class="dropdown-item">--model</a>
+</li>
+            
+<li>
+    <a href="vectorize/args/partition-manifest/" class="dropdown-item">--partition-manifest</a>
+</li>
+            
+<li>
+    <a href="vectorize/args/partition-out-dir/" class="dropdown-item">--partition-out-dir</a>
+</li>
+            
+<li>
+    <a href="vectorize/args/partition-dir/" class="dropdown-item">--partition-dir</a>
+</li>
+            
+<li>
+    <a href="vectorize/args/config/" class="dropdown-item">--config</a>
+</li>
+            
+<li>
+    <a href="vectorize/args/client-type/" class="dropdown-item">--client-type</a>
+</li>
+            
+<li>
+    <a href="vectorize/args/chroma-cloud-tenant/" class="dropdown-item">--chroma-cloud-tenant</a>
+</li>
+            
+<li>
+    <a href="vectorize/args/chroma-cloud-database/" class="dropdown-item">--chroma-cloud-database</a>
+</li>
+            
+<li>
+    <a href="vectorize/args/chroma-api-token/" class="dropdown-item">--chroma-api-token</a>
+</li>
+            
+<li>
+    <a href="vectorize/args/collection/" class="dropdown-item">--collection</a>
+</li>
+            
+<li>
+    <a href="vectorize/args/batch-size/" class="dropdown-item">--batch-size</a>
+</li>
+            
+<li>
+    <a href="vectorize/args/resume/" class="dropdown-item">--resume</a>
+</li>
+            
+<li>
+    <a href="vectorize/args/parallel-partitions/" class="dropdown-item">--parallel-partitions</a>
+</li>
+            
+<li>
+    <a href="vectorize/args/truncation-strategy/" class="dropdown-item">--truncation-strategy</a>
+</li>
+            
+<li>
+    <a href="vectorize/args/log-file/" class="dropdown-item">--log-file</a>
+</li>
+            
+<li>
+    <a href="vectorize/args/log-max-bytes/" class="dropdown-item">--log-max-bytes</a>
+</li>
+            
+<li>
+    <a href="vectorize/args/log-level/" class="dropdown-item">--log-level</a>
+</li>
+            
+<li>
+    <a href="vectorize/args/status-partition-out-dir/" class="dropdown-item">status --partition-out-dir</a>
+</li>
+            
+<li>
+    <a href="vectorize/args/status-partition-dir/" class="dropdown-item">status --partition-dir</a>
+</li>
+    </ul>
+  </li>
+                                </ul>
+                            </li>
+                            <li class="nav-item dropdown">
+                                <a href="#" class="nav-link dropdown-toggle" role="button" data-bs-toggle="dropdown"  aria-expanded="false">Query</a>
+                                <ul class="dropdown-menu">
+                                    
+<li>
+    <a href="query/overview/" class="dropdown-item">Purpose & Workflow</a>
+</li>
+                                    
+<li>
+    <a href="query/getting-started/" class="dropdown-item">Getting Started</a>
+</li>
+                                    
+<li>
+    <a href="query/api-reference/" class="dropdown-item">API Reference</a>
+</li>
+                                    
+<li>
+    <a href="query/examples/" class="dropdown-item">Examples</a>
+</li>
+                                    
+<li>
+    <a href="query/config/" class="dropdown-item">Config Reference</a>
+</li>
+                                </ul>
+                            </li>
+                            <li class="nav-item dropdown">
+                                <a href="#" class="nav-link dropdown-toggle" role="button" data-bs-toggle="dropdown"  aria-expanded="false">Docs Operations</a>
+                                <ul class="dropdown-menu">
+                                    
+<li>
+    <a href="publishing/" class="dropdown-item">Publishing to GitHub Pages</a>
+</li>
+                                </ul>
+                            </li>
+                        </ul>
+
+                    <ul class="nav navbar-nav ms-md-auto">
+                        <li class="nav-item">
+                            <a href="#" class="nav-link" data-bs-toggle="modal" data-bs-target="#mkdocs_search_modal">
+                                <i class="fa fa-search"></i> Search
+                            </a>
+                        </li>
+                            <li class="nav-item">
+                                <a rel="prev" class="nav-link disabled">
+                                    <i class="fa fa-arrow-left"></i> Previous
+                                </a>
+                            </li>
+                            <li class="nav-item">
+                                <a rel="next" href="getting-started/" class="nav-link">
+                                    Next <i class="fa fa-arrow-right"></i>
+                                </a>
+                            </li>
+                            <li class="nav-item">
+                                <a href="https://github.com/GetAdriAI/idxr/edit/master/docs/index.md" class="nav-link">Edit on GetAdriAI/idxr
+                                    </a>
+                            </li>
+                    </ul>
+                </div>
+            </div>
+        </div>
+
+        <div class="container">
+            <div class="row">
+                    <div class="col-md-3"><div class="navbar-expand-md bs-sidebar hidden-print affix" role="complementary">
+    <div class="navbar-header">
+        <button type="button" class="navbar-toggler collapsed" data-bs-toggle="collapse" data-bs-target="#toc-collapse" title="Table of Contents">
+            <span class="fa fa-angle-down"></span>
+        </button>
+    </div>
+
+    
+    <div id="toc-collapse" class="navbar-collapse collapse card bg-body-tertiary">
+        <ul class="nav flex-column">
+            
+            <li class="nav-item" data-bs-level="1"><a href="#overview" class="nav-link">Overview</a>
+              <ul class="nav flex-column">
+            <li class="nav-item" data-bs-level="2"><a href="#lifecycle-at-a-glance" class="nav-link">Lifecycle at a Glance</a>
+              <ul class="nav flex-column">
+              </ul>
+            </li>
+            <li class="nav-item" data-bs-level="2"><a href="#components" class="nav-link">Components</a>
+              <ul class="nav flex-column">
+              </ul>
+            </li>
+            <li class="nav-item" data-bs-level="2"><a href="#querying-multi-collection-indexes" class="nav-link">Querying Multi-Collection Indexes</a>
+              <ul class="nav flex-column">
+              </ul>
+            </li>
+              </ul>
+            </li>
+        </ul>
+    </div>
+</div></div>
+                    <div class="col-md-9" role="main">
+
+<h1 id="overview">Overview<a class="headerlink" href="#overview" title="Permanent link">&para;</a></h1>
+<p>idxr packages the full lifecycle of an operational vector index into a repeatable playbook. The toolkit is <strong>model-centric</strong>—you describe data with Pydantic models, <strong>config-driven</strong>—you check configs into source control, and <strong>fail-stop-retry</strong>—every stage records checkpoints so restarts are safe.</p>
+<h2 id="lifecycle-at-a-glance">Lifecycle at a Glance<a class="headerlink" href="#lifecycle-at-a-glance" title="Permanent link">&para;</a></h2>
+<ol>
+<li>
+<p><strong>Create the First Index</strong><br />
+   Use your model registry to scaffold preprocessing and vectorization configs. Generate partitions, hydrate an index, and lock the manifest snapshot in Git.</p>
+</li>
+<li>
+<p><strong>Feed the Pipeline Daily</strong><br />
+   As new data lands, rerun <code>idxr prepare_datasets</code> against the same config. Digest caches and row fingerprints keep subsequent runs fast while appending only novel partitions.</p>
+</li>
+<li>
+<p><strong>Add New Models with Confidence</strong><br />
+   New business areas slot in by registering fresh Pydantic models. Regenerate configs for those models only, review the diffs, and let idxr blend them into the same manifest.</p>
+</li>
+<li>
+<p><strong>Evolve Schemas Safely</strong><br />
+   Schema changes version themselves. When fields are added or renamed, idxr marks older partitions as stale and replays only the affected slices on the next vectorization run.</p>
+</li>
+<li>
+<p><strong>Operate with Guardrails</strong><br />
+   Every long-running job writes resumable state, detailed logs, and YAML error payloads for failed batches. You fix the source issue, rerun with <code>--resume</code>, and idxr carries on from the last good batch.</p>
+</li>
+</ol>
+<h2 id="components">Components<a class="headerlink" href="#components" title="Permanent link">&para;</a></h2>
+<ul>
+<li><code>idxr prepare_datasets</code> – partitions raw CSVs/JSONL, normalises encodings, and keeps a manifest of partition "migrations".</li>
+<li><code>idxr vectorize</code> – streams partitions into Chroma (local or cloud), enforces token budgets, and supports multi-partition concurrency.</li>
+<li><strong>Query client</strong> – async Python client for multi-collection indexes with automatic fan-out, result merging, and model-based filtering.</li>
+<li>Shared libraries – offer model registries, manifest utilities, truncation strategies, drop orchestration, and logging helpers.</li>
+</ul>
+<h2 id="querying-multi-collection-indexes">Querying Multi-Collection Indexes<a class="headerlink" href="#querying-multi-collection-indexes" title="Permanent link">&para;</a></h2>
+<p>When indexing large datasets (16M+ records), idxr distributes data across multiple ChromaDB collections. The query component provides seamless querying across these partitions:</p>
+<ol>
+<li><strong>Generate query config</strong> – scan indexed partitions to map models to collections</li>
+<li><strong>Initialize async client</strong> – connect to ChromaDB with the generated config</li>
+<li><strong>Query with model filters</strong> – search specific models or all collections with automatic fan-out</li>
+<li><strong>Retrieve merged results</strong> – get ranked results from multiple collections as if querying one</li>
+</ol>
+<p>See the <a href="query/overview/">Query documentation</a> for complete details on querying multi-collection indexes.</p>
+<hr />
+<p>This documentation dives into each phase, explains every configuration surface, and links practical command-line recipes for daily operations. Continuous delivery of your knowledge base starts here.</p></div>
+            </div>
+        </div>
+
+        <footer class="col-md-12">
+            <hr>
+            <p>Documentation built with <a href="https://www.mkdocs.org/">MkDocs</a>.</p>
+        </footer>
+        <script src="js/bootstrap.bundle.min.js"></script>
+        <script>
+            var base_url = ".",
+                shortcuts = {"help": 191, "next": 78, "previous": 80, "search": 83};
+        </script>
+        <script src="js/base.js"></script>
+        <script src="search/main.js"></script>
+
+        <div class="modal" id="mkdocs_search_modal" tabindex="-1" role="dialog" aria-labelledby="searchModalLabel" aria-hidden="true">
+    <div class="modal-dialog modal-lg">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h4 class="modal-title" id="searchModalLabel">Search</h4>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+            <div class="modal-body">
+                <p>From here you can search these documents. Enter your search terms below.</p>
+                <form>
+                    <div class="form-group">
+                        <input type="search" class="form-control" placeholder="Search..." id="mkdocs-search-query" title="Type search term here">
+                    </div>
+                </form>
+                <div id="mkdocs-search-results" data-no-results-text="No results found"></div>
+            </div>
+            <div class="modal-footer">
+            </div>
+        </div>
+    </div>
+</div><div class="modal" id="mkdocs_keyboard_modal" tabindex="-1" role="dialog" aria-labelledby="keyboardModalLabel" aria-hidden="true">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h4 class="modal-title" id="keyboardModalLabel">Keyboard Shortcuts</h4>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+            <div class="modal-body">
+              <table class="table">
+                <thead>
+                  <tr>
+                    <th style="width: 20%;">Keys</th>
+                    <th>Action</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  <tr>
+                    <td class="help shortcut"><kbd>?</kbd></td>
+                    <td>Open this help</td>
+                  </tr>
+                  <tr>
+                    <td class="next shortcut"><kbd>n</kbd></td>
+                    <td>Next page</td>
+                  </tr>
+                  <tr>
+                    <td class="prev shortcut"><kbd>p</kbd></td>
+                    <td>Previous page</td>
+                  </tr>
+                  <tr>
+                    <td class="search shortcut"><kbd>s</kbd></td>
+                    <td>Search</td>
+                  </tr>
+                </tbody>
+              </table>
+            </div>
+            <div class="modal-footer">
+            </div>
+        </div>
+    </div>
+</div>
+
+    </body>
+</html>
+
+<!--
+MkDocs version : 1.6.1
+Build Date UTC : 2025-10-31 17:15:59.513246+00:00
+-->

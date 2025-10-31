@@ -1,0 +1,817 @@
+<!DOCTYPE html>
+<html lang="en" data-bs-theme="light">
+    <head>
+        <meta charset="utf-8">
+        <meta http-equiv="X-UA-Compatible" content="IE=edge">
+        <meta name="viewport" content="width=device-width, initial-scale=1.0">
+        
+        
+        
+        <link rel="shortcut icon" href="../../img/favicon.ico">
+        <title>Examples - idxr Documentation</title>
+        <link href="../../css/bootstrap.min.css" rel="stylesheet">
+        <link href="../../css/fontawesome.min.css" rel="stylesheet">
+        <link href="../../css/brands.min.css" rel="stylesheet">
+        <link href="../../css/solid.min.css" rel="stylesheet">
+        <link href="../../css/v4-font-face.min.css" rel="stylesheet">
+        <link href="../../css/base.css" rel="stylesheet">
+        <link id="hljs-light" rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.8.0/styles/github.min.css" >
+        <link id="hljs-dark" rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.8.0/styles/github-dark.min.css" disabled>
+        <script src="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.8.0/highlight.min.js"></script>
+        <script>hljs.highlightAll();</script> 
+    </head>
+
+    <body>
+        <div class="navbar fixed-top navbar-expand-lg navbar-dark bg-primary">
+            <div class="container">
+                <a class="navbar-brand" href="../..">idxr Documentation</a>
+                <!-- Expander button -->
+                <button type="button" class="navbar-toggler" data-bs-toggle="collapse" data-bs-target="#navbar-collapse" aria-controls="navbar-collapse" aria-expanded="false" aria-label="Toggle navigation">
+                    <span class="navbar-toggler-icon"></span>
+                </button>
+
+                <!-- Expanded navigation -->
+                <div id="navbar-collapse" class="navbar-collapse collapse">
+                        <!-- Main navigation -->
+                        <ul class="nav navbar-nav">
+                            <li class="nav-item">
+                                <a href="../.." class="nav-link">Overview</a>
+                            </li>
+                            <li class="nav-item">
+                                <a href="../../getting-started/" class="nav-link">Getting Started</a>
+                            </li>
+                            <li class="nav-item dropdown">
+                                <a href="#" class="nav-link dropdown-toggle" role="button" data-bs-toggle="dropdown"  aria-expanded="false">Prepare Datasets</a>
+                                <ul class="dropdown-menu">
+                                    
+<li>
+    <a href="../../prepare-datasets/overview/" class="dropdown-item">Purpose & Workflow</a>
+</li>
+                                    
+<li>
+    <a href="../../prepare-datasets/config/" class="dropdown-item">Config Reference</a>
+</li>
+                                    
+  <li class="dropdown-submenu">
+    <a href="#" class="dropdown-item">CLI Arguments</a>
+    <ul class="dropdown-menu">
+            
+<li>
+    <a href="../../prepare-datasets/args/model/" class="dropdown-item">--model</a>
+</li>
+            
+<li>
+    <a href="../../prepare-datasets/args/config/" class="dropdown-item">--config</a>
+</li>
+            
+<li>
+    <a href="../../prepare-datasets/args/output-root/" class="dropdown-item">--output-root</a>
+</li>
+            
+<li>
+    <a href="../../prepare-datasets/args/directory-size/" class="dropdown-item">--directory-size</a>
+</li>
+            
+<li>
+    <a href="../../prepare-datasets/args/manifest/" class="dropdown-item">--manifest</a>
+</li>
+            
+<li>
+    <a href="../../prepare-datasets/args/log-level/" class="dropdown-item">--log-level</a>
+</li>
+    </ul>
+  </li>
+                                </ul>
+                            </li>
+                            <li class="nav-item dropdown">
+                                <a href="#" class="nav-link dropdown-toggle" role="button" data-bs-toggle="dropdown"  aria-expanded="false">Vectorize</a>
+                                <ul class="dropdown-menu">
+                                    
+<li>
+    <a href="../../vectorize/overview/" class="dropdown-item">Purpose & Workflow</a>
+</li>
+                                    
+<li>
+    <a href="../../vectorize/config/" class="dropdown-item">Config Reference</a>
+</li>
+                                    
+  <li class="dropdown-submenu">
+    <a href="#" class="dropdown-item">CLI Arguments</a>
+    <ul class="dropdown-menu">
+            
+<li>
+    <a href="../../vectorize/args/model/" class="dropdown-item">--model</a>
+</li>
+            
+<li>
+    <a href="../../vectorize/args/partition-manifest/" class="dropdown-item">--partition-manifest</a>
+</li>
+            
+<li>
+    <a href="../../vectorize/args/partition-out-dir/" class="dropdown-item">--partition-out-dir</a>
+</li>
+            
+<li>
+    <a href="../../vectorize/args/partition-dir/" class="dropdown-item">--partition-dir</a>
+</li>
+            
+<li>
+    <a href="../../vectorize/args/config/" class="dropdown-item">--config</a>
+</li>
+            
+<li>
+    <a href="../../vectorize/args/client-type/" class="dropdown-item">--client-type</a>
+</li>
+            
+<li>
+    <a href="../../vectorize/args/chroma-cloud-tenant/" class="dropdown-item">--chroma-cloud-tenant</a>
+</li>
+            
+<li>
+    <a href="../../vectorize/args/chroma-cloud-database/" class="dropdown-item">--chroma-cloud-database</a>
+</li>
+            
+<li>
+    <a href="../../vectorize/args/chroma-api-token/" class="dropdown-item">--chroma-api-token</a>
+</li>
+            
+<li>
+    <a href="../../vectorize/args/collection/" class="dropdown-item">--collection</a>
+</li>
+            
+<li>
+    <a href="../../vectorize/args/batch-size/" class="dropdown-item">--batch-size</a>
+</li>
+            
+<li>
+    <a href="../../vectorize/args/resume/" class="dropdown-item">--resume</a>
+</li>
+            
+<li>
+    <a href="../../vectorize/args/parallel-partitions/" class="dropdown-item">--parallel-partitions</a>
+</li>
+            
+<li>
+    <a href="../../vectorize/args/truncation-strategy/" class="dropdown-item">--truncation-strategy</a>
+</li>
+            
+<li>
+    <a href="../../vectorize/args/log-file/" class="dropdown-item">--log-file</a>
+</li>
+            
+<li>
+    <a href="../../vectorize/args/log-max-bytes/" class="dropdown-item">--log-max-bytes</a>
+</li>
+            
+<li>
+    <a href="../../vectorize/args/log-level/" class="dropdown-item">--log-level</a>
+</li>
+            
+<li>
+    <a href="../../vectorize/args/status-partition-out-dir/" class="dropdown-item">status --partition-out-dir</a>
+</li>
+            
+<li>
+    <a href="../../vectorize/args/status-partition-dir/" class="dropdown-item">status --partition-dir</a>
+</li>
+    </ul>
+  </li>
+                                </ul>
+                            </li>
+                            <li class="nav-item dropdown">
+                                <a href="#" class="nav-link dropdown-toggle active" aria-current="page" role="button" data-bs-toggle="dropdown"  aria-expanded="false">Query</a>
+                                <ul class="dropdown-menu">
+                                    
+<li>
+    <a href="../overview/" class="dropdown-item">Purpose & Workflow</a>
+</li>
+                                    
+<li>
+    <a href="../getting-started/" class="dropdown-item">Getting Started</a>
+</li>
+                                    
+<li>
+    <a href="../api-reference/" class="dropdown-item">API Reference</a>
+</li>
+                                    
+<li>
+    <a href="./" class="dropdown-item active" aria-current="page">Examples</a>
+</li>
+                                    
+<li>
+    <a href="../config/" class="dropdown-item">Config Reference</a>
+</li>
+                                </ul>
+                            </li>
+                            <li class="nav-item dropdown">
+                                <a href="#" class="nav-link dropdown-toggle" role="button" data-bs-toggle="dropdown"  aria-expanded="false">Docs Operations</a>
+                                <ul class="dropdown-menu">
+                                    
+<li>
+    <a href="../../publishing/" class="dropdown-item">Publishing to GitHub Pages</a>
+</li>
+                                </ul>
+                            </li>
+                        </ul>
+
+                    <ul class="nav navbar-nav ms-md-auto">
+                        <li class="nav-item">
+                            <a href="#" class="nav-link" data-bs-toggle="modal" data-bs-target="#mkdocs_search_modal">
+                                <i class="fa fa-search"></i> Search
+                            </a>
+                        </li>
+                            <li class="nav-item">
+                                <a rel="prev" href="../api-reference/" class="nav-link">
+                                    <i class="fa fa-arrow-left"></i> Previous
+                                </a>
+                            </li>
+                            <li class="nav-item">
+                                <a rel="next" href="../config/" class="nav-link">
+                                    Next <i class="fa fa-arrow-right"></i>
+                                </a>
+                            </li>
+                            <li class="nav-item">
+                                <a href="https://github.com/GetAdriAI/idxr/edit/master/docs/query/examples.md" class="nav-link">Edit on GetAdriAI/idxr
+                                    </a>
+                            </li>
+                    </ul>
+                </div>
+            </div>
+        </div>
+
+        <div class="container">
+            <div class="row">
+                    <div class="col-md-3"><div class="navbar-expand-md bs-sidebar hidden-print affix" role="complementary">
+    <div class="navbar-header">
+        <button type="button" class="navbar-toggler collapsed" data-bs-toggle="collapse" data-bs-target="#toc-collapse" title="Table of Contents">
+            <span class="fa fa-angle-down"></span>
+        </button>
+    </div>
+
+    
+    <div id="toc-collapse" class="navbar-collapse collapse card bg-body-tertiary">
+        <ul class="nav flex-column">
+            
+            <li class="nav-item" data-bs-level="1"><a href="#query-examples" class="nav-link">Query Examples</a>
+              <ul class="nav flex-column">
+            <li class="nav-item" data-bs-level="2"><a href="#basic-queries" class="nav-link">Basic Queries</a>
+              <ul class="nav flex-column">
+              </ul>
+            </li>
+            <li class="nav-item" data-bs-level="2"><a href="#advanced-filtering" class="nav-link">Advanced Filtering</a>
+              <ul class="nav flex-column">
+              </ul>
+            </li>
+            <li class="nav-item" data-bs-level="2"><a href="#batch-queries" class="nav-link">Batch Queries</a>
+              <ul class="nav flex-column">
+              </ul>
+            </li>
+            <li class="nav-item" data-bs-level="2"><a href="#document-retrieval" class="nav-link">Document Retrieval</a>
+              <ul class="nav flex-column">
+              </ul>
+            </li>
+            <li class="nav-item" data-bs-level="2"><a href="#counting" class="nav-link">Counting</a>
+              <ul class="nav flex-column">
+              </ul>
+            </li>
+            <li class="nav-item" data-bs-level="2"><a href="#rag-pipeline-integration" class="nav-link">RAG Pipeline Integration</a>
+              <ul class="nav flex-column">
+              </ul>
+            </li>
+            <li class="nav-item" data-bs-level="2"><a href="#error-handling" class="nav-link">Error Handling</a>
+              <ul class="nav flex-column">
+              </ul>
+            </li>
+            <li class="nav-item" data-bs-level="2"><a href="#performance-optimization" class="nav-link">Performance Optimization</a>
+              <ul class="nav flex-column">
+              </ul>
+            </li>
+            <li class="nav-item" data-bs-level="2"><a href="#complete-application-example" class="nav-link">Complete Application Example</a>
+              <ul class="nav flex-column">
+              </ul>
+            </li>
+            <li class="nav-item" data-bs-level="2"><a href="#next-steps" class="nav-link">Next Steps</a>
+              <ul class="nav flex-column">
+              </ul>
+            </li>
+              </ul>
+            </li>
+        </ul>
+    </div>
+</div></div>
+                    <div class="col-md-9" role="main">
+
+<h1 id="query-examples">Query Examples<a class="headerlink" href="#query-examples" title="Permanent link">&para;</a></h1>
+<p>Practical examples for common query patterns with AsyncMultiCollectionQueryClient.</p>
+<h2 id="basic-queries">Basic Queries<a class="headerlink" href="#basic-queries" title="Permanent link">&para;</a></h2>
+<h3 id="query-all-models">Query All Models<a class="headerlink" href="#query-all-models" title="Permanent link">&para;</a></h3>
+<p>Search across all collections when you don't know which model contains the answer:</p>
+<div class="codehilite"><pre><span></span><code><span class="kn">from</span><span class="w"> </span><span class="nn">indexer.vectorize_lib</span><span class="w"> </span><span class="kn">import</span> <span class="n">AsyncMultiCollectionQueryClient</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">pathlib</span><span class="w"> </span><span class="kn">import</span> <span class="n">Path</span>
+<span class="kn">import</span><span class="w"> </span><span class="nn">asyncio</span>
+
+<span class="k">async</span> <span class="k">def</span><span class="w"> </span><span class="nf">query_all</span><span class="p">():</span>
+    <span class="k">async</span> <span class="k">with</span> <span class="n">AsyncMultiCollectionQueryClient</span><span class="p">(</span>
+        <span class="n">config_path</span><span class="o">=</span><span class="n">Path</span><span class="p">(</span><span class="s2">&quot;query_config.json&quot;</span><span class="p">),</span>
+        <span class="n">client_type</span><span class="o">=</span><span class="s2">&quot;cloud&quot;</span><span class="p">,</span>
+        <span class="n">cloud_api_key</span><span class="o">=</span><span class="s2">&quot;your-api-key&quot;</span><span class="p">,</span>
+    <span class="p">)</span> <span class="k">as</span> <span class="n">client</span><span class="p">:</span>
+        <span class="n">results</span> <span class="o">=</span> <span class="k">await</span> <span class="n">client</span><span class="o">.</span><span class="n">query</span><span class="p">(</span>
+            <span class="n">query_texts</span><span class="o">=</span><span class="p">[</span><span class="s2">&quot;What are SAP authorization objects?&quot;</span><span class="p">],</span>
+            <span class="n">n_results</span><span class="o">=</span><span class="mi">10</span><span class="p">,</span>
+            <span class="n">models</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span>  <span class="c1"># Query ALL collections</span>
+        <span class="p">)</span>
+
+        <span class="nb">print</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;Found </span><span class="si">{</span><span class="nb">len</span><span class="p">(</span><span class="n">results</span><span class="p">[</span><span class="s1">&#39;ids&#39;</span><span class="p">][</span><span class="mi">0</span><span class="p">])</span><span class="si">}</span><span class="s2"> results:&quot;</span><span class="p">)</span>
+        <span class="k">for</span> <span class="n">doc_id</span><span class="p">,</span> <span class="n">distance</span><span class="p">,</span> <span class="n">metadata</span> <span class="ow">in</span> <span class="nb">zip</span><span class="p">(</span>
+            <span class="n">results</span><span class="p">[</span><span class="s2">&quot;ids&quot;</span><span class="p">][</span><span class="mi">0</span><span class="p">],</span>
+            <span class="n">results</span><span class="p">[</span><span class="s2">&quot;distances&quot;</span><span class="p">][</span><span class="mi">0</span><span class="p">],</span>
+            <span class="n">results</span><span class="p">[</span><span class="s2">&quot;metadatas&quot;</span><span class="p">][</span><span class="mi">0</span><span class="p">]</span>
+        <span class="p">):</span>
+            <span class="n">model</span> <span class="o">=</span> <span class="n">metadata</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">&quot;model_name&quot;</span><span class="p">,</span> <span class="s2">&quot;unknown&quot;</span><span class="p">)</span>
+            <span class="nb">print</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;  [</span><span class="si">{</span><span class="n">model</span><span class="si">}</span><span class="s2">] </span><span class="si">{</span><span class="n">doc_id</span><span class="si">}</span><span class="s2"> - Distance: </span><span class="si">{</span><span class="n">distance</span><span class="si">:</span><span class="s2">.4f</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">)</span>
+
+<span class="n">asyncio</span><span class="o">.</span><span class="n">run</span><span class="p">(</span><span class="n">query_all</span><span class="p">())</span>
+</code></pre></div>
+
+<h3 id="query-specific-models">Query Specific Models<a class="headerlink" href="#query-specific-models" title="Permanent link">&para;</a></h3>
+<p>Search only relevant collections when you know the model:</p>
+<div class="codehilite"><pre><span></span><code><span class="k">async</span> <span class="k">def</span><span class="w"> </span><span class="nf">query_specific</span><span class="p">():</span>
+    <span class="k">async</span> <span class="k">with</span> <span class="n">AsyncMultiCollectionQueryClient</span><span class="p">(</span>
+        <span class="n">config_path</span><span class="o">=</span><span class="n">Path</span><span class="p">(</span><span class="s2">&quot;query_config.json&quot;</span><span class="p">),</span>
+        <span class="n">client_type</span><span class="o">=</span><span class="s2">&quot;cloud&quot;</span><span class="p">,</span>
+        <span class="n">cloud_api_key</span><span class="o">=</span><span class="s2">&quot;your-api-key&quot;</span><span class="p">,</span>
+    <span class="p">)</span> <span class="k">as</span> <span class="n">client</span><span class="p">:</span>
+        <span class="n">results</span> <span class="o">=</span> <span class="k">await</span> <span class="n">client</span><span class="o">.</span><span class="n">query</span><span class="p">(</span>
+            <span class="n">query_texts</span><span class="o">=</span><span class="p">[</span><span class="s2">&quot;transaction table MARA&quot;</span><span class="p">],</span>
+            <span class="n">n_results</span><span class="o">=</span><span class="mi">10</span><span class="p">,</span>
+            <span class="n">models</span><span class="o">=</span><span class="p">[</span><span class="s2">&quot;Table&quot;</span><span class="p">],</span>  <span class="c1"># Only Table collections</span>
+        <span class="p">)</span>
+
+        <span class="k">for</span> <span class="n">doc_id</span> <span class="ow">in</span> <span class="n">results</span><span class="p">[</span><span class="s2">&quot;ids&quot;</span><span class="p">][</span><span class="mi">0</span><span class="p">]:</span>
+            <span class="nb">print</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;  </span><span class="si">{</span><span class="n">doc_id</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">)</span>
+
+<span class="n">asyncio</span><span class="o">.</span><span class="n">run</span><span class="p">(</span><span class="n">query_specific</span><span class="p">())</span>
+</code></pre></div>
+
+<h2 id="advanced-filtering">Advanced Filtering<a class="headerlink" href="#advanced-filtering" title="Permanent link">&para;</a></h2>
+<h3 id="query-with-metadata-filters">Query with Metadata Filters<a class="headerlink" href="#query-with-metadata-filters" title="Permanent link">&para;</a></h3>
+<p>Combine model filtering with metadata constraints:</p>
+<div class="codehilite"><pre><span></span><code><span class="k">async</span> <span class="k">def</span><span class="w"> </span><span class="nf">query_with_filters</span><span class="p">():</span>
+    <span class="k">async</span> <span class="k">with</span> <span class="n">AsyncMultiCollectionQueryClient</span><span class="p">(</span>
+        <span class="n">config_path</span><span class="o">=</span><span class="n">Path</span><span class="p">(</span><span class="s2">&quot;query_config.json&quot;</span><span class="p">),</span>
+        <span class="n">client_type</span><span class="o">=</span><span class="s2">&quot;cloud&quot;</span><span class="p">,</span>
+        <span class="n">cloud_api_key</span><span class="o">=</span><span class="s2">&quot;your-api-key&quot;</span><span class="p">,</span>
+    <span class="p">)</span> <span class="k">as</span> <span class="n">client</span><span class="p">:</span>
+        <span class="c1"># Only semantic-enabled records</span>
+        <span class="n">results</span> <span class="o">=</span> <span class="k">await</span> <span class="n">client</span><span class="o">.</span><span class="n">query</span><span class="p">(</span>
+            <span class="n">query_texts</span><span class="o">=</span><span class="p">[</span><span class="s2">&quot;customer data&quot;</span><span class="p">],</span>
+            <span class="n">n_results</span><span class="o">=</span><span class="mi">10</span><span class="p">,</span>
+            <span class="n">where</span><span class="o">=</span><span class="p">{</span><span class="s2">&quot;has_sem&quot;</span><span class="p">:</span> <span class="kc">True</span><span class="p">},</span>
+            <span class="n">models</span><span class="o">=</span><span class="p">[</span><span class="s2">&quot;Table&quot;</span><span class="p">,</span> <span class="s2">&quot;Field&quot;</span><span class="p">],</span>
+        <span class="p">)</span>
+
+        <span class="c1"># Complex filter</span>
+        <span class="n">results</span> <span class="o">=</span> <span class="k">await</span> <span class="n">client</span><span class="o">.</span><span class="n">query</span><span class="p">(</span>
+            <span class="n">query_texts</span><span class="o">=</span><span class="p">[</span><span class="s2">&quot;sales data&quot;</span><span class="p">],</span>
+            <span class="n">n_results</span><span class="o">=</span><span class="mi">10</span><span class="p">,</span>
+            <span class="n">where</span><span class="o">=</span><span class="p">{</span>
+                <span class="s2">&quot;$and&quot;</span><span class="p">:</span> <span class="p">[</span>
+                    <span class="p">{</span><span class="s2">&quot;has_sem&quot;</span><span class="p">:</span> <span class="kc">True</span><span class="p">},</span>
+                    <span class="p">{</span><span class="s2">&quot;schema_version&quot;</span><span class="p">:</span> <span class="p">{</span><span class="s2">&quot;$gte&quot;</span><span class="p">:</span> <span class="mi">2</span><span class="p">}},</span>
+                    <span class="p">{</span><span class="s2">&quot;model_name&quot;</span><span class="p">:</span> <span class="p">{</span><span class="s2">&quot;$in&quot;</span><span class="p">:</span> <span class="p">[</span><span class="s2">&quot;Table&quot;</span><span class="p">,</span> <span class="s2">&quot;View&quot;</span><span class="p">]}}</span>
+                <span class="p">]</span>
+            <span class="p">},</span>
+            <span class="n">models</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span>
+        <span class="p">)</span>
+
+<span class="n">asyncio</span><span class="o">.</span><span class="n">run</span><span class="p">(</span><span class="n">query_with_filters</span><span class="p">())</span>
+</code></pre></div>
+
+<h2 id="batch-queries">Batch Queries<a class="headerlink" href="#batch-queries" title="Permanent link">&para;</a></h2>
+<h3 id="query-multiple-texts-in-parallel">Query Multiple Texts in Parallel<a class="headerlink" href="#query-multiple-texts-in-parallel" title="Permanent link">&para;</a></h3>
+<p>Query multiple search terms simultaneously:</p>
+<div class="codehilite"><pre><span></span><code><span class="k">async</span> <span class="k">def</span><span class="w"> </span><span class="nf">batch_query</span><span class="p">():</span>
+    <span class="k">async</span> <span class="k">with</span> <span class="n">AsyncMultiCollectionQueryClient</span><span class="p">(</span>
+        <span class="n">config_path</span><span class="o">=</span><span class="n">Path</span><span class="p">(</span><span class="s2">&quot;query_config.json&quot;</span><span class="p">),</span>
+        <span class="n">client_type</span><span class="o">=</span><span class="s2">&quot;cloud&quot;</span><span class="p">,</span>
+        <span class="n">cloud_api_key</span><span class="o">=</span><span class="s2">&quot;your-api-key&quot;</span><span class="p">,</span>
+    <span class="p">)</span> <span class="k">as</span> <span class="n">client</span><span class="p">:</span>
+        <span class="c1"># Query 3 different texts at once</span>
+        <span class="n">results</span> <span class="o">=</span> <span class="k">await</span> <span class="n">client</span><span class="o">.</span><span class="n">query</span><span class="p">(</span>
+            <span class="n">query_texts</span><span class="o">=</span><span class="p">[</span>
+                <span class="s2">&quot;SAP authorization objects&quot;</span><span class="p">,</span>
+                <span class="s2">&quot;transaction tables&quot;</span><span class="p">,</span>
+                <span class="s2">&quot;customer master data&quot;</span>
+            <span class="p">],</span>
+            <span class="n">n_results</span><span class="o">=</span><span class="mi">5</span><span class="p">,</span>
+            <span class="n">models</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span>
+        <span class="p">)</span>
+
+        <span class="c1"># Process results for each query</span>
+        <span class="k">for</span> <span class="n">query_idx</span><span class="p">,</span> <span class="n">query_text</span> <span class="ow">in</span> <span class="nb">enumerate</span><span class="p">([</span>
+            <span class="s2">&quot;SAP authorization objects&quot;</span><span class="p">,</span>
+            <span class="s2">&quot;transaction tables&quot;</span><span class="p">,</span>
+            <span class="s2">&quot;customer master data&quot;</span>
+        <span class="p">]):</span>
+            <span class="nb">print</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;</span><span class="se">\n</span><span class="s2">Results for: </span><span class="si">{</span><span class="n">query_text</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">)</span>
+            <span class="k">for</span> <span class="n">doc_id</span><span class="p">,</span> <span class="n">distance</span> <span class="ow">in</span> <span class="nb">zip</span><span class="p">(</span>
+                <span class="n">results</span><span class="p">[</span><span class="s2">&quot;ids&quot;</span><span class="p">][</span><span class="n">query_idx</span><span class="p">],</span>
+                <span class="n">results</span><span class="p">[</span><span class="s2">&quot;distances&quot;</span><span class="p">][</span><span class="n">query_idx</span><span class="p">]</span>
+            <span class="p">):</span>
+                <span class="nb">print</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;  </span><span class="si">{</span><span class="n">doc_id</span><span class="si">}</span><span class="s2"> - </span><span class="si">{</span><span class="n">distance</span><span class="si">:</span><span class="s2">.4f</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">)</span>
+
+<span class="n">asyncio</span><span class="o">.</span><span class="n">run</span><span class="p">(</span><span class="n">batch_query</span><span class="p">())</span>
+</code></pre></div>
+
+<h2 id="document-retrieval">Document Retrieval<a class="headerlink" href="#document-retrieval" title="Permanent link">&para;</a></h2>
+<h3 id="get-documents-by-id">Get Documents by ID<a class="headerlink" href="#get-documents-by-id" title="Permanent link">&para;</a></h3>
+<p>Retrieve specific documents from collections:</p>
+<div class="codehilite"><pre><span></span><code><span class="k">async</span> <span class="k">def</span><span class="w"> </span><span class="nf">get_by_id</span><span class="p">():</span>
+    <span class="k">async</span> <span class="k">with</span> <span class="n">AsyncMultiCollectionQueryClient</span><span class="p">(</span>
+        <span class="n">config_path</span><span class="o">=</span><span class="n">Path</span><span class="p">(</span><span class="s2">&quot;query_config.json&quot;</span><span class="p">),</span>
+        <span class="n">client_type</span><span class="o">=</span><span class="s2">&quot;cloud&quot;</span><span class="p">,</span>
+        <span class="n">cloud_api_key</span><span class="o">=</span><span class="s2">&quot;your-api-key&quot;</span><span class="p">,</span>
+    <span class="p">)</span> <span class="k">as</span> <span class="n">client</span><span class="p">:</span>
+        <span class="n">docs</span> <span class="o">=</span> <span class="k">await</span> <span class="n">client</span><span class="o">.</span><span class="n">get</span><span class="p">(</span>
+            <span class="n">ids</span><span class="o">=</span><span class="p">[</span><span class="s2">&quot;Table_MARA_001&quot;</span><span class="p">,</span> <span class="s2">&quot;Field_MATNR_001&quot;</span><span class="p">],</span>
+            <span class="n">models</span><span class="o">=</span><span class="p">[</span><span class="s2">&quot;Table&quot;</span><span class="p">,</span> <span class="s2">&quot;Field&quot;</span><span class="p">],</span>
+        <span class="p">)</span>
+
+        <span class="k">for</span> <span class="n">doc_id</span><span class="p">,</span> <span class="n">doc_text</span><span class="p">,</span> <span class="n">metadata</span> <span class="ow">in</span> <span class="nb">zip</span><span class="p">(</span>
+            <span class="n">docs</span><span class="p">[</span><span class="s2">&quot;ids&quot;</span><span class="p">],</span>
+            <span class="n">docs</span><span class="p">[</span><span class="s2">&quot;documents&quot;</span><span class="p">],</span>
+            <span class="n">docs</span><span class="p">[</span><span class="s2">&quot;metadatas&quot;</span><span class="p">]</span>
+        <span class="p">):</span>
+            <span class="nb">print</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;</span><span class="si">{</span><span class="n">doc_id</span><span class="si">}</span><span class="s2">:&quot;</span><span class="p">)</span>
+            <span class="nb">print</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;  Text: </span><span class="si">{</span><span class="n">doc_text</span><span class="p">[:</span><span class="mi">100</span><span class="p">]</span><span class="si">}</span><span class="s2">...&quot;</span><span class="p">)</span>
+            <span class="nb">print</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;  Metadata: </span><span class="si">{</span><span class="n">metadata</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">)</span>
+
+<span class="n">asyncio</span><span class="o">.</span><span class="n">run</span><span class="p">(</span><span class="n">get_by_id</span><span class="p">())</span>
+</code></pre></div>
+
+<h3 id="get-documents-with-filter">Get Documents with Filter<a class="headerlink" href="#get-documents-with-filter" title="Permanent link">&para;</a></h3>
+<p>Retrieve documents matching criteria:</p>
+<div class="codehilite"><pre><span></span><code><span class="k">async</span> <span class="k">def</span><span class="w"> </span><span class="nf">get_with_filter</span><span class="p">():</span>
+    <span class="k">async</span> <span class="k">with</span> <span class="n">AsyncMultiCollectionQueryClient</span><span class="p">(</span>
+        <span class="n">config_path</span><span class="o">=</span><span class="n">Path</span><span class="p">(</span><span class="s2">&quot;query_config.json&quot;</span><span class="p">),</span>
+        <span class="n">client_type</span><span class="o">=</span><span class="s2">&quot;cloud&quot;</span><span class="p">,</span>
+        <span class="n">cloud_api_key</span><span class="o">=</span><span class="s2">&quot;your-api-key&quot;</span><span class="p">,</span>
+    <span class="p">)</span> <span class="k">as</span> <span class="n">client</span><span class="p">:</span>
+        <span class="n">docs</span> <span class="o">=</span> <span class="k">await</span> <span class="n">client</span><span class="o">.</span><span class="n">get</span><span class="p">(</span>
+            <span class="n">where</span><span class="o">=</span><span class="p">{</span>
+                <span class="s2">&quot;has_sem&quot;</span><span class="p">:</span> <span class="kc">True</span><span class="p">,</span>
+                <span class="s2">&quot;model_name&quot;</span><span class="p">:</span> <span class="s2">&quot;Table&quot;</span>
+            <span class="p">},</span>
+            <span class="n">limit</span><span class="o">=</span><span class="mi">100</span><span class="p">,</span>
+            <span class="n">models</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span>
+        <span class="p">)</span>
+
+        <span class="nb">print</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;Retrieved </span><span class="si">{</span><span class="nb">len</span><span class="p">(</span><span class="n">docs</span><span class="p">[</span><span class="s1">&#39;ids&#39;</span><span class="p">])</span><span class="si">}</span><span class="s2"> documents&quot;</span><span class="p">)</span>
+
+<span class="n">asyncio</span><span class="o">.</span><span class="n">run</span><span class="p">(</span><span class="n">get_with_filter</span><span class="p">())</span>
+</code></pre></div>
+
+<h2 id="counting">Counting<a class="headerlink" href="#counting" title="Permanent link">&para;</a></h2>
+<h3 id="count-documents">Count Documents<a class="headerlink" href="#count-documents" title="Permanent link">&para;</a></h3>
+<p>Get document counts across collections:</p>
+<div class="codehilite"><pre><span></span><code><span class="k">async</span> <span class="k">def</span><span class="w"> </span><span class="nf">count_documents</span><span class="p">():</span>
+    <span class="k">async</span> <span class="k">with</span> <span class="n">AsyncMultiCollectionQueryClient</span><span class="p">(</span>
+        <span class="n">config_path</span><span class="o">=</span><span class="n">Path</span><span class="p">(</span><span class="s2">&quot;query_config.json&quot;</span><span class="p">),</span>
+        <span class="n">client_type</span><span class="o">=</span><span class="s2">&quot;cloud&quot;</span><span class="p">,</span>
+        <span class="n">cloud_api_key</span><span class="o">=</span><span class="s2">&quot;your-api-key&quot;</span><span class="p">,</span>
+    <span class="p">)</span> <span class="k">as</span> <span class="n">client</span><span class="p">:</span>
+        <span class="c1"># Count all documents</span>
+        <span class="n">total</span> <span class="o">=</span> <span class="k">await</span> <span class="n">client</span><span class="o">.</span><span class="n">count</span><span class="p">(</span><span class="n">models</span><span class="o">=</span><span class="kc">None</span><span class="p">)</span>
+        <span class="nb">print</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;Total documents: </span><span class="si">{</span><span class="n">total</span><span class="si">:</span><span class="s2">,</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">)</span>
+
+        <span class="c1"># Count by model</span>
+        <span class="n">table_count</span> <span class="o">=</span> <span class="k">await</span> <span class="n">client</span><span class="o">.</span><span class="n">count</span><span class="p">(</span><span class="n">models</span><span class="o">=</span><span class="p">[</span><span class="s2">&quot;Table&quot;</span><span class="p">])</span>
+        <span class="nb">print</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;Table documents: </span><span class="si">{</span><span class="n">table_count</span><span class="si">:</span><span class="s2">,</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">)</span>
+
+        <span class="c1"># Count with filter</span>
+        <span class="n">sem_count</span> <span class="o">=</span> <span class="k">await</span> <span class="n">client</span><span class="o">.</span><span class="n">count</span><span class="p">(</span>
+            <span class="n">where</span><span class="o">=</span><span class="p">{</span><span class="s2">&quot;has_sem&quot;</span><span class="p">:</span> <span class="kc">True</span><span class="p">},</span>
+            <span class="n">models</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span>
+        <span class="p">)</span>
+        <span class="nb">print</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;Semantic-enabled documents: </span><span class="si">{</span><span class="n">sem_count</span><span class="si">:</span><span class="s2">,</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">)</span>
+
+<span class="n">asyncio</span><span class="o">.</span><span class="n">run</span><span class="p">(</span><span class="n">count_documents</span><span class="p">())</span>
+</code></pre></div>
+
+<h2 id="rag-pipeline-integration">RAG Pipeline Integration<a class="headerlink" href="#rag-pipeline-integration" title="Permanent link">&para;</a></h2>
+<h3 id="semantic-search-for-rag">Semantic Search for RAG<a class="headerlink" href="#semantic-search-for-rag" title="Permanent link">&para;</a></h3>
+<p>Integrate with RAG (Retrieval-Augmented Generation) pipeline:</p>
+<div class="codehilite"><pre><span></span><code><span class="kn">import</span><span class="w"> </span><span class="nn">openai</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">indexer.vectorize_lib</span><span class="w"> </span><span class="kn">import</span> <span class="n">AsyncMultiCollectionQueryClient</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">pathlib</span><span class="w"> </span><span class="kn">import</span> <span class="n">Path</span>
+
+<span class="k">async</span> <span class="k">def</span><span class="w"> </span><span class="nf">rag_search</span><span class="p">(</span><span class="n">user_question</span><span class="p">:</span> <span class="nb">str</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">str</span><span class="p">:</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;Search index and generate answer using RAG.&quot;&quot;&quot;</span>
+
+    <span class="c1"># Step 1: Retrieve relevant documents</span>
+    <span class="k">async</span> <span class="k">with</span> <span class="n">AsyncMultiCollectionQueryClient</span><span class="p">(</span>
+        <span class="n">config_path</span><span class="o">=</span><span class="n">Path</span><span class="p">(</span><span class="s2">&quot;query_config.json&quot;</span><span class="p">),</span>
+        <span class="n">client_type</span><span class="o">=</span><span class="s2">&quot;cloud&quot;</span><span class="p">,</span>
+        <span class="n">cloud_api_key</span><span class="o">=</span><span class="s2">&quot;your-api-key&quot;</span><span class="p">,</span>
+    <span class="p">)</span> <span class="k">as</span> <span class="n">client</span><span class="p">:</span>
+        <span class="n">results</span> <span class="o">=</span> <span class="k">await</span> <span class="n">client</span><span class="o">.</span><span class="n">query</span><span class="p">(</span>
+            <span class="n">query_texts</span><span class="o">=</span><span class="p">[</span><span class="n">user_question</span><span class="p">],</span>
+            <span class="n">n_results</span><span class="o">=</span><span class="mi">5</span><span class="p">,</span>
+            <span class="n">models</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span>
+        <span class="p">)</span>
+
+    <span class="c1"># Step 2: Extract context from results</span>
+    <span class="n">context_docs</span> <span class="o">=</span> <span class="p">[]</span>
+    <span class="k">for</span> <span class="n">doc_text</span><span class="p">,</span> <span class="n">metadata</span> <span class="ow">in</span> <span class="nb">zip</span><span class="p">(</span>
+        <span class="n">results</span><span class="p">[</span><span class="s2">&quot;documents&quot;</span><span class="p">][</span><span class="mi">0</span><span class="p">],</span>
+        <span class="n">results</span><span class="p">[</span><span class="s2">&quot;metadatas&quot;</span><span class="p">][</span><span class="mi">0</span><span class="p">]</span>
+    <span class="p">):</span>
+        <span class="n">model</span> <span class="o">=</span> <span class="n">metadata</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">&quot;model_name&quot;</span><span class="p">,</span> <span class="s2">&quot;unknown&quot;</span><span class="p">)</span>
+        <span class="n">context_docs</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;[</span><span class="si">{</span><span class="n">model</span><span class="si">}</span><span class="s2">] </span><span class="si">{</span><span class="n">doc_text</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">)</span>
+
+    <span class="n">context</span> <span class="o">=</span> <span class="s2">&quot;</span><span class="se">\n\n</span><span class="s2">&quot;</span><span class="o">.</span><span class="n">join</span><span class="p">(</span><span class="n">context_docs</span><span class="p">)</span>
+
+    <span class="c1"># Step 3: Generate answer with LLM</span>
+    <span class="n">response</span> <span class="o">=</span> <span class="n">openai</span><span class="o">.</span><span class="n">chat</span><span class="o">.</span><span class="n">completions</span><span class="o">.</span><span class="n">create</span><span class="p">(</span>
+        <span class="n">model</span><span class="o">=</span><span class="s2">&quot;gpt-4&quot;</span><span class="p">,</span>
+        <span class="n">messages</span><span class="o">=</span><span class="p">[</span>
+            <span class="p">{</span>
+                <span class="s2">&quot;role&quot;</span><span class="p">:</span> <span class="s2">&quot;system&quot;</span><span class="p">,</span>
+                <span class="s2">&quot;content&quot;</span><span class="p">:</span> <span class="s2">&quot;Answer questions based on the provided context.&quot;</span>
+            <span class="p">},</span>
+            <span class="p">{</span>
+                <span class="s2">&quot;role&quot;</span><span class="p">:</span> <span class="s2">&quot;user&quot;</span><span class="p">,</span>
+                <span class="s2">&quot;content&quot;</span><span class="p">:</span> <span class="sa">f</span><span class="s2">&quot;Context:</span><span class="se">\n</span><span class="si">{</span><span class="n">context</span><span class="si">}</span><span class="se">\n\n</span><span class="s2">Question: </span><span class="si">{</span><span class="n">user_question</span><span class="si">}</span><span class="s2">&quot;</span>
+            <span class="p">}</span>
+        <span class="p">]</span>
+    <span class="p">)</span>
+
+    <span class="k">return</span> <span class="n">response</span><span class="o">.</span><span class="n">choices</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span><span class="o">.</span><span class="n">message</span><span class="o">.</span><span class="n">content</span>
+
+<span class="c1"># Usage</span>
+<span class="n">answer</span> <span class="o">=</span> <span class="n">asyncio</span><span class="o">.</span><span class="n">run</span><span class="p">(</span><span class="n">rag_search</span><span class="p">(</span><span class="s2">&quot;What are SAP authorization objects?&quot;</span><span class="p">))</span>
+<span class="nb">print</span><span class="p">(</span><span class="n">answer</span><span class="p">)</span>
+</code></pre></div>
+
+<h2 id="error-handling">Error Handling<a class="headerlink" href="#error-handling" title="Permanent link">&para;</a></h2>
+<h3 id="graceful-degradation">Graceful Degradation<a class="headerlink" href="#graceful-degradation" title="Permanent link">&para;</a></h3>
+<p>Handle partial collection failures:</p>
+<div class="codehilite"><pre><span></span><code><span class="k">async</span> <span class="k">def</span><span class="w"> </span><span class="nf">robust_query</span><span class="p">():</span>
+    <span class="k">async</span> <span class="k">with</span> <span class="n">AsyncMultiCollectionQueryClient</span><span class="p">(</span>
+        <span class="n">config_path</span><span class="o">=</span><span class="n">Path</span><span class="p">(</span><span class="s2">&quot;query_config.json&quot;</span><span class="p">),</span>
+        <span class="n">client_type</span><span class="o">=</span><span class="s2">&quot;cloud&quot;</span><span class="p">,</span>
+        <span class="n">cloud_api_key</span><span class="o">=</span><span class="s2">&quot;your-api-key&quot;</span><span class="p">,</span>
+    <span class="p">)</span> <span class="k">as</span> <span class="n">client</span><span class="p">:</span>
+        <span class="k">try</span><span class="p">:</span>
+            <span class="n">results</span> <span class="o">=</span> <span class="k">await</span> <span class="n">client</span><span class="o">.</span><span class="n">query</span><span class="p">(</span>
+                <span class="n">query_texts</span><span class="o">=</span><span class="p">[</span><span class="s2">&quot;search term&quot;</span><span class="p">],</span>
+                <span class="n">n_results</span><span class="o">=</span><span class="mi">10</span><span class="p">,</span>
+                <span class="n">models</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span>
+            <span class="p">)</span>
+
+            <span class="c1"># Check if we got results</span>
+            <span class="k">if</span> <span class="nb">len</span><span class="p">(</span><span class="n">results</span><span class="p">[</span><span class="s2">&quot;ids&quot;</span><span class="p">][</span><span class="mi">0</span><span class="p">])</span> <span class="o">==</span> <span class="mi">0</span><span class="p">:</span>
+                <span class="nb">print</span><span class="p">(</span><span class="s2">&quot;No results found&quot;</span><span class="p">)</span>
+            <span class="k">else</span><span class="p">:</span>
+                <span class="nb">print</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;Found </span><span class="si">{</span><span class="nb">len</span><span class="p">(</span><span class="n">results</span><span class="p">[</span><span class="s1">&#39;ids&#39;</span><span class="p">][</span><span class="mi">0</span><span class="p">])</span><span class="si">}</span><span class="s2"> results&quot;</span><span class="p">)</span>
+
+        <span class="k">except</span> <span class="ne">RuntimeError</span> <span class="k">as</span> <span class="n">e</span><span class="p">:</span>
+            <span class="nb">print</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;Client error: </span><span class="si">{</span><span class="n">e</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">)</span>
+        <span class="k">except</span> <span class="ne">ValueError</span> <span class="k">as</span> <span class="n">e</span><span class="p">:</span>
+            <span class="nb">print</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;Invalid query: </span><span class="si">{</span><span class="n">e</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">)</span>
+
+<span class="n">asyncio</span><span class="o">.</span><span class="n">run</span><span class="p">(</span><span class="n">robust_query</span><span class="p">())</span>
+</code></pre></div>
+
+<h2 id="performance-optimization">Performance Optimization<a class="headerlink" href="#performance-optimization" title="Permanent link">&para;</a></h2>
+<h3 id="model-specific-queries">Model-Specific Queries<a class="headerlink" href="#model-specific-queries" title="Permanent link">&para;</a></h3>
+<p>Optimize performance by querying only relevant models:</p>
+<div class="codehilite"><pre><span></span><code><span class="k">async</span> <span class="k">def</span><span class="w"> </span><span class="nf">optimized_query</span><span class="p">(</span><span class="n">query_text</span><span class="p">:</span> <span class="nb">str</span><span class="p">,</span> <span class="n">intent</span><span class="p">:</span> <span class="nb">str</span><span class="p">):</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;Route queries to relevant models based on intent.&quot;&quot;&quot;</span>
+
+    <span class="c1"># Map intents to models</span>
+    <span class="n">intent_to_models</span> <span class="o">=</span> <span class="p">{</span>
+        <span class="s2">&quot;table_lookup&quot;</span><span class="p">:</span> <span class="p">[</span><span class="s2">&quot;Table&quot;</span><span class="p">],</span>
+        <span class="s2">&quot;field_search&quot;</span><span class="p">:</span> <span class="p">[</span><span class="s2">&quot;Field&quot;</span><span class="p">],</span>
+        <span class="s2">&quot;authorization&quot;</span><span class="p">:</span> <span class="p">[</span><span class="s2">&quot;AuthObject&quot;</span><span class="p">,</span> <span class="s2">&quot;Function&quot;</span><span class="p">],</span>
+        <span class="s2">&quot;general&quot;</span><span class="p">:</span> <span class="kc">None</span><span class="p">,</span>  <span class="c1"># Query all</span>
+    <span class="p">}</span>
+
+    <span class="n">models</span> <span class="o">=</span> <span class="n">intent_to_models</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="n">intent</span><span class="p">,</span> <span class="kc">None</span><span class="p">)</span>
+
+    <span class="k">async</span> <span class="k">with</span> <span class="n">AsyncMultiCollectionQueryClient</span><span class="p">(</span>
+        <span class="n">config_path</span><span class="o">=</span><span class="n">Path</span><span class="p">(</span><span class="s2">&quot;query_config.json&quot;</span><span class="p">),</span>
+        <span class="n">client_type</span><span class="o">=</span><span class="s2">&quot;cloud&quot;</span><span class="p">,</span>
+        <span class="n">cloud_api_key</span><span class="o">=</span><span class="s2">&quot;your-api-key&quot;</span><span class="p">,</span>
+    <span class="p">)</span> <span class="k">as</span> <span class="n">client</span><span class="p">:</span>
+        <span class="n">results</span> <span class="o">=</span> <span class="k">await</span> <span class="n">client</span><span class="o">.</span><span class="n">query</span><span class="p">(</span>
+            <span class="n">query_texts</span><span class="o">=</span><span class="p">[</span><span class="n">query_text</span><span class="p">],</span>
+            <span class="n">n_results</span><span class="o">=</span><span class="mi">10</span><span class="p">,</span>
+            <span class="n">models</span><span class="o">=</span><span class="n">models</span><span class="p">,</span>
+        <span class="p">)</span>
+
+        <span class="k">return</span> <span class="n">results</span>
+
+<span class="c1"># Fast lookup in Table model only</span>
+<span class="n">results</span> <span class="o">=</span> <span class="n">asyncio</span><span class="o">.</span><span class="n">run</span><span class="p">(</span><span class="n">optimized_query</span><span class="p">(</span><span class="s2">&quot;MARA table&quot;</span><span class="p">,</span> <span class="s2">&quot;table_lookup&quot;</span><span class="p">))</span>
+
+<span class="c1"># Broad search across all models</span>
+<span class="n">results</span> <span class="o">=</span> <span class="n">asyncio</span><span class="o">.</span><span class="n">run</span><span class="p">(</span><span class="n">optimized_query</span><span class="p">(</span><span class="s2">&quot;SAP authorization&quot;</span><span class="p">,</span> <span class="s2">&quot;general&quot;</span><span class="p">))</span>
+</code></pre></div>
+
+<h2 id="complete-application-example">Complete Application Example<a class="headerlink" href="#complete-application-example" title="Permanent link">&para;</a></h2>
+<h3 id="full-featured-search-application">Full-Featured Search Application<a class="headerlink" href="#full-featured-search-application" title="Permanent link">&para;</a></h3>
+<div class="codehilite"><pre><span></span><code><span class="kn">from</span><span class="w"> </span><span class="nn">indexer.vectorize_lib</span><span class="w"> </span><span class="kn">import</span> <span class="p">(</span>
+    <span class="n">AsyncMultiCollectionQueryClient</span><span class="p">,</span>
+    <span class="n">generate_query_config</span><span class="p">,</span>
+<span class="p">)</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">pathlib</span><span class="w"> </span><span class="kn">import</span> <span class="n">Path</span>
+<span class="kn">import</span><span class="w"> </span><span class="nn">os</span>
+<span class="kn">import</span><span class="w"> </span><span class="nn">asyncio</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">typing</span><span class="w"> </span><span class="kn">import</span> <span class="n">Optional</span><span class="p">,</span> <span class="n">List</span>
+
+<span class="k">class</span><span class="w"> </span><span class="nc">SAPIndexSearch</span><span class="p">:</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;Wrapper for SAP index search functionality.&quot;&quot;&quot;</span>
+
+    <span class="k">def</span><span class="w"> </span><span class="fm">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">config_path</span><span class="p">:</span> <span class="n">Path</span><span class="p">,</span> <span class="n">api_key</span><span class="p">:</span> <span class="nb">str</span><span class="p">):</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">config_path</span> <span class="o">=</span> <span class="n">config_path</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">api_key</span> <span class="o">=</span> <span class="n">api_key</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">client</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="n">AsyncMultiCollectionQueryClient</span><span class="p">]</span> <span class="o">=</span> <span class="kc">None</span>
+
+    <span class="k">async</span> <span class="k">def</span><span class="w"> </span><span class="fm">__aenter__</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">client</span> <span class="o">=</span> <span class="n">AsyncMultiCollectionQueryClient</span><span class="p">(</span>
+            <span class="n">config_path</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">config_path</span><span class="p">,</span>
+            <span class="n">client_type</span><span class="o">=</span><span class="s2">&quot;cloud&quot;</span><span class="p">,</span>
+            <span class="n">cloud_api_key</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">api_key</span><span class="p">,</span>
+        <span class="p">)</span>
+        <span class="k">await</span> <span class="bp">self</span><span class="o">.</span><span class="n">client</span><span class="o">.</span><span class="n">connect</span><span class="p">()</span>
+        <span class="k">return</span> <span class="bp">self</span>
+
+    <span class="k">async</span> <span class="k">def</span><span class="w"> </span><span class="fm">__aexit__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="o">*</span><span class="n">args</span><span class="p">):</span>
+        <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">client</span><span class="p">:</span>
+            <span class="k">await</span> <span class="bp">self</span><span class="o">.</span><span class="n">client</span><span class="o">.</span><span class="n">close</span><span class="p">()</span>
+
+    <span class="k">async</span> <span class="k">def</span><span class="w"> </span><span class="nf">search</span><span class="p">(</span>
+        <span class="bp">self</span><span class="p">,</span>
+        <span class="n">query</span><span class="p">:</span> <span class="nb">str</span><span class="p">,</span>
+        <span class="n">models</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="n">List</span><span class="p">[</span><span class="nb">str</span><span class="p">]]</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
+        <span class="n">filters</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="nb">dict</span><span class="p">]</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
+        <span class="n">limit</span><span class="p">:</span> <span class="nb">int</span> <span class="o">=</span> <span class="mi">10</span>
+    <span class="p">)</span> <span class="o">-&gt;</span> <span class="n">List</span><span class="p">[</span><span class="nb">dict</span><span class="p">]:</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;Search with automatic model routing.&quot;&quot;&quot;</span>
+        <span class="n">results</span> <span class="o">=</span> <span class="k">await</span> <span class="bp">self</span><span class="o">.</span><span class="n">client</span><span class="o">.</span><span class="n">query</span><span class="p">(</span>
+            <span class="n">query_texts</span><span class="o">=</span><span class="p">[</span><span class="n">query</span><span class="p">],</span>
+            <span class="n">n_results</span><span class="o">=</span><span class="n">limit</span><span class="p">,</span>
+            <span class="n">where</span><span class="o">=</span><span class="n">filters</span><span class="p">,</span>
+            <span class="n">models</span><span class="o">=</span><span class="n">models</span><span class="p">,</span>
+        <span class="p">)</span>
+
+        <span class="c1"># Format results</span>
+        <span class="n">formatted</span> <span class="o">=</span> <span class="p">[]</span>
+        <span class="k">for</span> <span class="n">doc_id</span><span class="p">,</span> <span class="n">distance</span><span class="p">,</span> <span class="n">doc_text</span><span class="p">,</span> <span class="n">metadata</span> <span class="ow">in</span> <span class="nb">zip</span><span class="p">(</span>
+            <span class="n">results</span><span class="p">[</span><span class="s2">&quot;ids&quot;</span><span class="p">][</span><span class="mi">0</span><span class="p">],</span>
+            <span class="n">results</span><span class="p">[</span><span class="s2">&quot;distances&quot;</span><span class="p">][</span><span class="mi">0</span><span class="p">],</span>
+            <span class="n">results</span><span class="p">[</span><span class="s2">&quot;documents&quot;</span><span class="p">][</span><span class="mi">0</span><span class="p">],</span>
+            <span class="n">results</span><span class="p">[</span><span class="s2">&quot;metadatas&quot;</span><span class="p">][</span><span class="mi">0</span><span class="p">]</span>
+        <span class="p">):</span>
+            <span class="n">formatted</span><span class="o">.</span><span class="n">append</span><span class="p">({</span>
+                <span class="s2">&quot;id&quot;</span><span class="p">:</span> <span class="n">doc_id</span><span class="p">,</span>
+                <span class="s2">&quot;score&quot;</span><span class="p">:</span> <span class="mi">1</span> <span class="o">-</span> <span class="n">distance</span><span class="p">,</span>  <span class="c1"># Convert to similarity</span>
+                <span class="s2">&quot;text&quot;</span><span class="p">:</span> <span class="n">doc_text</span><span class="p">,</span>
+                <span class="s2">&quot;model&quot;</span><span class="p">:</span> <span class="n">metadata</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">&quot;model_name&quot;</span><span class="p">),</span>
+                <span class="s2">&quot;metadata&quot;</span><span class="p">:</span> <span class="n">metadata</span><span class="p">,</span>
+            <span class="p">})</span>
+
+        <span class="k">return</span> <span class="n">formatted</span>
+
+    <span class="k">async</span> <span class="k">def</span><span class="w"> </span><span class="nf">get_stats</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">dict</span><span class="p">:</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;Get index statistics.&quot;&quot;&quot;</span>
+        <span class="n">total</span> <span class="o">=</span> <span class="k">await</span> <span class="bp">self</span><span class="o">.</span><span class="n">client</span><span class="o">.</span><span class="n">count</span><span class="p">(</span><span class="n">models</span><span class="o">=</span><span class="kc">None</span><span class="p">)</span>
+
+        <span class="c1"># Count per model (example with known models)</span>
+        <span class="n">models</span> <span class="o">=</span> <span class="p">[</span><span class="s2">&quot;Table&quot;</span><span class="p">,</span> <span class="s2">&quot;Field&quot;</span><span class="p">,</span> <span class="s2">&quot;Function&quot;</span><span class="p">]</span>
+        <span class="n">model_counts</span> <span class="o">=</span> <span class="p">{}</span>
+        <span class="k">for</span> <span class="n">model</span> <span class="ow">in</span> <span class="n">models</span><span class="p">:</span>
+            <span class="k">try</span><span class="p">:</span>
+                <span class="n">count</span> <span class="o">=</span> <span class="k">await</span> <span class="bp">self</span><span class="o">.</span><span class="n">client</span><span class="o">.</span><span class="n">count</span><span class="p">(</span><span class="n">models</span><span class="o">=</span><span class="p">[</span><span class="n">model</span><span class="p">])</span>
+                <span class="n">model_counts</span><span class="p">[</span><span class="n">model</span><span class="p">]</span> <span class="o">=</span> <span class="n">count</span>
+            <span class="k">except</span><span class="p">:</span>
+                <span class="k">pass</span>
+
+        <span class="k">return</span> <span class="p">{</span>
+            <span class="s2">&quot;total_documents&quot;</span><span class="p">:</span> <span class="n">total</span><span class="p">,</span>
+            <span class="s2">&quot;model_counts&quot;</span><span class="p">:</span> <span class="n">model_counts</span><span class="p">,</span>
+        <span class="p">}</span>
+
+<span class="c1"># Usage</span>
+<span class="k">async</span> <span class="k">def</span><span class="w"> </span><span class="nf">main</span><span class="p">():</span>
+    <span class="k">async</span> <span class="k">with</span> <span class="n">SAPIndexSearch</span><span class="p">(</span>
+        <span class="n">config_path</span><span class="o">=</span><span class="n">Path</span><span class="p">(</span><span class="s2">&quot;query_config.json&quot;</span><span class="p">),</span>
+        <span class="n">api_key</span><span class="o">=</span><span class="n">os</span><span class="o">.</span><span class="n">getenv</span><span class="p">(</span><span class="s2">&quot;CHROMA_API_TOKEN&quot;</span><span class="p">),</span>
+    <span class="p">)</span> <span class="k">as</span> <span class="n">search</span><span class="p">:</span>
+        <span class="c1"># Search</span>
+        <span class="n">results</span> <span class="o">=</span> <span class="n">search</span><span class="o">.</span><span class="k">await</span> <span class="n">search</span><span class="p">(</span>
+            <span class="s2">&quot;SAP authorization objects&quot;</span><span class="p">,</span>
+            <span class="n">models</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span>
+            <span class="n">limit</span><span class="o">=</span><span class="mi">5</span>
+        <span class="p">)</span>
+
+        <span class="k">for</span> <span class="n">result</span> <span class="ow">in</span> <span class="n">results</span><span class="p">:</span>
+            <span class="nb">print</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;[</span><span class="si">{</span><span class="n">result</span><span class="p">[</span><span class="s1">&#39;model&#39;</span><span class="p">]</span><span class="si">}</span><span class="s2">] Score: </span><span class="si">{</span><span class="n">result</span><span class="p">[</span><span class="s1">&#39;score&#39;</span><span class="p">]</span><span class="si">:</span><span class="s2">.4f</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">)</span>
+            <span class="nb">print</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;  </span><span class="si">{</span><span class="n">result</span><span class="p">[</span><span class="s1">&#39;text&#39;</span><span class="p">][:</span><span class="mi">100</span><span class="p">]</span><span class="si">}</span><span class="s2">...&quot;</span><span class="p">)</span>
+
+        <span class="c1"># Stats</span>
+        <span class="n">stats</span> <span class="o">=</span> <span class="k">await</span> <span class="n">search</span><span class="o">.</span><span class="n">get_stats</span><span class="p">()</span>
+        <span class="nb">print</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;</span><span class="se">\n</span><span class="s2">Index Statistics:&quot;</span><span class="p">)</span>
+        <span class="nb">print</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;  Total: </span><span class="si">{</span><span class="n">stats</span><span class="p">[</span><span class="s1">&#39;total_documents&#39;</span><span class="p">]</span><span class="si">:</span><span class="s2">,</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">)</span>
+        <span class="k">for</span> <span class="n">model</span><span class="p">,</span> <span class="n">count</span> <span class="ow">in</span> <span class="n">stats</span><span class="p">[</span><span class="s1">&#39;model_counts&#39;</span><span class="p">]</span><span class="o">.</span><span class="n">items</span><span class="p">():</span>
+            <span class="nb">print</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;  </span><span class="si">{</span><span class="n">model</span><span class="si">}</span><span class="s2">: </span><span class="si">{</span><span class="n">count</span><span class="si">:</span><span class="s2">,</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">)</span>
+
+<span class="n">asyncio</span><span class="o">.</span><span class="n">run</span><span class="p">(</span><span class="n">main</span><span class="p">())</span>
+</code></pre></div>
+
+<h2 id="next-steps">Next Steps<a class="headerlink" href="#next-steps" title="Permanent link">&para;</a></h2>
+<ul>
+<li>Review <a href="../api-reference/">API Reference</a> for complete method documentation</li>
+<li>Check <a href="best-practices.md">Best Practices</a> for performance tips</li>
+<li>Read <a href="../config/">Configuration</a> for query config options</li>
+</ul></div>
+            </div>
+        </div>
+
+        <footer class="col-md-12">
+            <hr>
+            <p>Documentation built with <a href="https://www.mkdocs.org/">MkDocs</a>.</p>
+        </footer>
+        <script src="../../js/bootstrap.bundle.min.js"></script>
+        <script>
+            var base_url = "../..",
+                shortcuts = {"help": 191, "next": 78, "previous": 80, "search": 83};
+        </script>
+        <script src="../../js/base.js"></script>
+        <script src="../../search/main.js"></script>
+
+        <div class="modal" id="mkdocs_search_modal" tabindex="-1" role="dialog" aria-labelledby="searchModalLabel" aria-hidden="true">
+    <div class="modal-dialog modal-lg">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h4 class="modal-title" id="searchModalLabel">Search</h4>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+            <div class="modal-body">
+                <p>From here you can search these documents. Enter your search terms below.</p>
+                <form>
+                    <div class="form-group">
+                        <input type="search" class="form-control" placeholder="Search..." id="mkdocs-search-query" title="Type search term here">
+                    </div>
+                </form>
+                <div id="mkdocs-search-results" data-no-results-text="No results found"></div>
+            </div>
+            <div class="modal-footer">
+            </div>
+        </div>
+    </div>
+</div><div class="modal" id="mkdocs_keyboard_modal" tabindex="-1" role="dialog" aria-labelledby="keyboardModalLabel" aria-hidden="true">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h4 class="modal-title" id="keyboardModalLabel">Keyboard Shortcuts</h4>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+            <div class="modal-body">
+              <table class="table">
+                <thead>
+                  <tr>
+                    <th style="width: 20%;">Keys</th>
+                    <th>Action</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  <tr>
+                    <td class="help shortcut"><kbd>?</kbd></td>
+                    <td>Open this help</td>
+                  </tr>
+                  <tr>
+                    <td class="next shortcut"><kbd>n</kbd></td>
+                    <td>Next page</td>
+                  </tr>
+                  <tr>
+                    <td class="prev shortcut"><kbd>p</kbd></td>
+                    <td>Previous page</td>
+                  </tr>
+                  <tr>
+                    <td class="search shortcut"><kbd>s</kbd></td>
+                    <td>Search</td>
+                  </tr>
+                </tbody>
+              </table>
+            </div>
+            <div class="modal-footer">
+            </div>
+        </div>
+    </div>
+</div>
+
+    </body>
+</html>
