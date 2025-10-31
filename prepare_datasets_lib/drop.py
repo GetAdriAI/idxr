@@ -9,7 +9,7 @@ from datetime import datetime, timezone
 from pathlib import Path
 from typing import Dict, Iterable, List, Mapping, MutableMapping, Optional, Tuple
 
-from kb.std.ecc_6_0_ehp_7.registry import ModelSpec
+from ..models import ModelSpec
 
 from .config import load_drop_config
 from .manifest import load_manifest, save_manifest

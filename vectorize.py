@@ -17,12 +17,10 @@ from indexer.vectorize_lib import (
 )
 from indexer.load_model_registry import load_model_registry
 from indexer.models import ModelSpec
-from kb.std.ecc_6_0_ehp_7.registry import MODEL_REGISTRY
 
 load_dotenv()
 
 __all__ = [
-    "MODEL_REGISTRY",
     "ModelConfig",
     "ModelSpec",
     "VectorizeCLI",

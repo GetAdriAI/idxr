@@ -9,7 +9,7 @@ from dataclasses import dataclass
 from pathlib import Path
 from typing import Dict, List, Mapping, Optional, Sequence, Tuple
 
-from kb.std.ecc_6_0_ehp_7.registry import ModelSpec
+from ..models import ModelSpec
 
 
 DEFAULT_CONFIG_OUTPUT_DIR = Path("prepare_datasets")
