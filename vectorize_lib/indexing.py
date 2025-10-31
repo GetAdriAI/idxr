@@ -19,6 +19,10 @@ from chromadb.utils.embedding_functions import (
     OpenAIEmbeddingFunction,
 )
 
+from .compact import (
+    CHROMA_DOCUMENT_SIZE_LIMIT,
+    DocumentCompactor,
+)
 from .configuration import ModelConfig
 from .documents import (
     MetadataDict,
@@ -197,6 +201,7 @@ def index_from_config(
     resume: bool = False,
     resume_chunk_size: int = 10000,
     encoder: Any = None,
+    compactor: Optional[DocumentCompactor] = None,
     token_limit: int = TOKEN_SAFETY_LIMIT,
     embedding_token_limit: int = 8191,
     completion_state: Optional[Dict[str, Any]] = None,
@@ -702,6 +707,31 @@ def index_from_config(
 
             return batch_limit
 
+        compactor_ref: Optional[DocumentCompactor] = compactor
+        compactor_init_failed = False
+
+        def get_document_compactor() -> Optional[DocumentCompactor]:
+            nonlocal compactor_ref, compactor_init_failed
+            if compactor_ref is not None:
+                return compactor_ref
+            if compactor_init_failed:
+                return None
+            try:
+                compactor_ref = DocumentCompactor()
+            except Exception as exc:
+                logging.error("Unable to initialize document compactor: %s", exc)
+                compactor_init_failed = True
+                return None
+            return compactor_ref
+
+        def hard_trim_to_byte_limit(
+            value: str, limit: int = CHROMA_DOCUMENT_SIZE_LIMIT
+        ) -> str:
+            encoded = value.encode("utf-8")
+            if len(encoded) <= limit:
+                return value
+            return encoded[:limit].decode("utf-8", errors="ignore").rstrip()
+
         skip_state_persisted = False
 
         def handle_skip_complete(
@@ -771,6 +801,39 @@ def index_from_config(
         ) -> None:
             nonlocal current_token_total, effective_batch_size
 
+            current_batch_size = effective_batch_size
+
+            original_bytes = len(text.encode("utf-8"))
+            if original_bytes > CHROMA_DOCUMENT_SIZE_LIMIT:
+                metadata["original_bytes"] = int(original_bytes)
+                compactor_instance = get_document_compactor()
+                if compactor_instance is not None:
+                    result = compactor_instance.compact(
+                        doc_id=doc_id,
+                        text=text,
+                        model_name=model_key,
+                        target_bytes=CHROMA_DOCUMENT_SIZE_LIMIT,
+                    )
+                    text = result.text
+                    if result.was_compacted:
+                        metadata["compacted"] = True
+                adjusted_bytes = len(text.encode("utf-8"))
+                if adjusted_bytes > CHROMA_DOCUMENT_SIZE_LIMIT:
+                    logging.warning(
+                        (
+                            "Document %s in %s still exceeds %s bytes after "
+                            "compaction attempt; applying hard trim."
+                        ),
+                        doc_id,
+                        model_key,
+                        format_int(CHROMA_DOCUMENT_SIZE_LIMIT),
+                    )
+                    text = hard_trim_to_byte_limit(text, CHROMA_DOCUMENT_SIZE_LIMIT)
+                    adjusted_bytes = len(text.encode("utf-8"))
+                    metadata["compaction_fallback"] = "hard_trim"
+                    metadata["compacted"] = True
+                if adjusted_bytes != original_bytes:
+                    metadata["compacted_bytes"] = int(adjusted_bytes)
             token_count = count_tokens(text, encoder)
             current_batch_size = effective_batch_size
 
